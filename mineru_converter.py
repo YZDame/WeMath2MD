@@ -138,22 +138,37 @@ class MinerUConverter:
             images_count = 0
             
             with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-                # 找到一级目录下的 full.md 文件
-                for name in zf.namelist():
-                    # 解析路径，找一级目录下的 full.md
-                    parts = name.split('/')
-                    
+                # 打印 zip 内容用于调试
+                all_files = zf.namelist()
+                print(f"      📦 ZIP 包含 {len(all_files)} 个文件")
+                
+                # 找 markdown 文件
+                for name in all_files:
                     # full.md 可能在根目录或一级子目录下
-                    if name.endswith('full.md'):
-                        # 确保是一级目录下的 (如 xxx/full.md 或直接 full.md)
-                        if len(parts) <= 2:
+                    if name.endswith('full.md') or name.endswith('.md'):
+                        parts = name.split('/')
+                        # 优先选择 full.md
+                        if name.endswith('full.md') and len(parts) <= 2:
                             md_content = zf.read(name).decode('utf-8')
-                            # 替换图片路径，把 images/ 改成统一的 images/
-                            # 并添加前缀避免文件名冲突
                             md_content = self._rewrite_image_paths(md_content, index)
+                            break
+                        # 备选任何 .md 文件
+                        elif md_content is None and len(parts) <= 2:
+                            md_content = zf.read(name).decode('utf-8')
+                            md_content = self._rewrite_image_paths(md_content, index)
+                
+                # 提取 images 文件夹中的图片（支持多种路径格式）
+                for name in all_files:
+                    # 跳过目录
+                    if name.endswith('/'):
+                        continue
                     
-                    # 提取 images 文件夹中的图片
-                    if '/images/' in name and not name.endswith('/'):
+                    # 检查是否是图片文件（在 images 目录下或者是图片扩展名）
+                    lower_name = name.lower()
+                    is_image = any(lower_name.endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'])
+                    is_in_images = '/images/' in name or name.startswith('images/')
+                    
+                    if is_image and is_in_images:
                         # 获取原始图片文件名
                         img_name = os.path.basename(name)
                         # 添加索引前缀避免冲突
@@ -168,14 +183,7 @@ class MinerUConverter:
                         images_count += 1
             
             if md_content is None:
-                # 尝试找任何 .md 文件
-                with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-                    md_files = [f for f in zf.namelist() if f.endswith('.md')]
-                    if md_files:
-                        md_content = zf.read(md_files[0]).decode('utf-8')
-                        md_content = self._rewrite_image_paths(md_content, index)
-                    else:
-                        md_content = f"<!-- {file_name}: zip 中未找到 markdown 文件 -->"
+                md_content = f"<!-- {file_name}: zip 中未找到 markdown 文件 -->"
             
             return md_content, images_count
             
@@ -311,31 +319,37 @@ class MinerUConverter:
                 f.write(final_content)
             print(f"   ✅ 已生成: {md_file}")
             
-            # 步骤6: 复制图片到输出目录
+            # 步骤6: 复制图片到输出目录（如果有图片的话）
             print("\n📁 步骤6: 复制图片到输出目录...")
             
             final_images_dir = output_dir / "images"
-            final_images_dir.mkdir(exist_ok=True)
-            
             temp_images_dir = temp_dir / "images"
-            if temp_images_dir.exists():
+            
+            if temp_images_dir.exists() and any(temp_images_dir.iterdir()):
+                final_images_dir.mkdir(exist_ok=True)
                 for img_file in temp_images_dir.iterdir():
                     if img_file.is_file():
                         shutil.copy2(img_file, final_images_dir / img_file.name)
+                print(f"   ✅ 图片已保存到: {final_images_dir}")
+            else:
+                print(f"   ℹ️  无额外图片需要复制")
             
-            print(f"   ✅ 图片已保存到: {final_images_dir}")
-            
-            # 步骤7: 打包成 zip（可选，放在结果目录同级）
+            # 步骤7: 打包成 zip（整个结果目录）
             print("\n📦 步骤7: 打包成 zip 文件...")
             
-            zip_file = output_dir.parent / f"{output_dir.parent.name}.zip"
+            result_root = output_dir.parent  # 例如 output/反演变换及其应用/
+            zip_file = result_root.parent / f"{result_root.name}.zip"  # output/反演变换及其应用.zip
+            
             with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-                # 遍历整个结果目录（包括 downloaded_images 和 converted）
-                result_root = output_dir.parent
+                # 遍历整个结果目录
                 for root, dirs, files in os.walk(result_root):
                     for file in files:
+                        # 跳过 zip 文件本身（避免套娃）
+                        if file.endswith('.zip'):
+                            continue
                         file_path = Path(root) / file
-                        arcname = file_path.relative_to(result_root.parent)
+                        # 相对于结果目录的路径
+                        arcname = file_path.relative_to(result_root)
                         zf.write(file_path, arcname)
             
             print(f"   ✅ 已打包: {zip_file}")
