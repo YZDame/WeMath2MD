@@ -55,7 +55,15 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 ```
 
-### 4. 配置 API Token
+### 4. 安装命令行工具（可选）
+
+```bash
+pip install -e .
+```
+
+安装后可以直接使用 `wemath2md` 命令。
+
+### 5. 配置 API Token
 
 1. 前往 [MinerU](https://mineru.net) 注册并获取 API Token
 2. 复制 `.env.example` 为 `.env`
@@ -66,24 +74,32 @@ cp .env.example .env
 # 编辑 .env 文件，填入你的 Token
 ```
 
-### 5. 运行
+### 6. 运行
 
 ```bash
-python main.py
+# 方式一：命令行参数
+wemath2md https://mp.weixin.qq.com/s/xxxxx
+
+# 方式二：交互式（直接运行后输入链接）
+wemath2md
+
+# 方式三：使用 Python 运行
+python main.py https://mp.weixin.qq.com/s/xxxxx
 ```
 
 ## 📖 使用方法
 
-### 方式一：一站式处理（推荐）
+### 方式一：命令行（推荐）
 
-编辑 `main.py` 中的 URL 和 Token，然后运行：
+```bash
+# 直接传入链接
+wemath2md https://mp.weixin.qq.com/s/xxxxx
 
-```python
-result = process_wechat_article(
-    url="https://mp.weixin.qq.com/s/xxxxx",
-    api_token="your_api_token",
-    output_dir="output"
-)
+# 指定输出目录
+wemath2md https://mp.weixin.qq.com/s/xxxxx -o my_output
+
+# 交互模式（不传链接，运行后提示输入）
+wemath2md
 ```
 
 ### 方式二：分步执行

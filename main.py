@@ -2,9 +2,16 @@
 """
 微信公众号文章图片转 Markdown 工具
 整合 downloader 和 mineru_converter，一站式处理
+
+使用方式:
+    1. 命令行: wemath2md https://mp.weixin.qq.com/s/xxx
+    2. 交互式: wemath2md (然后输入链接)
+    3. Python: python main.py https://mp.weixin.qq.com/s/xxx
 """
 
 import os
+import sys
+import argparse
 from dotenv import load_dotenv
 from downloader import WechatImageDownloader
 from mineru_converter import MinerUConverter
@@ -101,8 +108,28 @@ def process_wechat_article(url, api_token, output_dir="output"):
     return final_result
 
 
-# ============ 使用示例 ============
-if __name__ == "__main__":
+# ============ 命令行入口 ============
+def main():
+    """命令行入口函数"""
+    
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(
+        prog='wemath2md',
+        description='🚀 微信公众号数学文章转 Markdown 工具',
+        epilog='示例: wemath2md https://mp.weixin.qq.com/s/xxxxx'
+    )
+    parser.add_argument(
+        'url',
+        nargs='?',  # 可选参数
+        help='微信公众号文章链接'
+    )
+    parser.add_argument(
+        '-o', '--output',
+        default='output',
+        help='输出目录 (默认: output)'
+    )
+    
+    args = parser.parse_args()
     
     # 从环境变量读取 API Token
     API_TOKEN = os.getenv("MINERU_API_TOKEN")
@@ -111,14 +138,41 @@ if __name__ == "__main__":
         print("❌ 错误: 未找到 MINERU_API_TOKEN")
         print("   请创建 .env 文件并设置 MINERU_API_TOKEN=your_token")
         print("   或参考 .env.example 文件")
-        exit(1)
+        sys.exit(1)
     
-    # 微信公众号文章链接
-    ARTICLE_URL = "https://mp.weixin.qq.com/s/0FKXBV81FzHcd4QcHTVvHg"
+    # 获取文章链接
+    url = args.url
+    
+    # 如果没有提供 URL，进入交互模式
+    if not url:
+        print("=" * 60)
+        print("🚀 微信公众号文章 → Markdown 转换工具")
+        print("=" * 60)
+        print()
+        url = input("📎 请输入微信公众号文章链接: ").strip()
+        
+        if not url:
+            print("❌ 错误: 未输入链接")
+            sys.exit(1)
+    
+    # 简单验证 URL
+    if not url.startswith('http'):
+        print(f"❌ 错误: 无效的链接 '{url}'")
+        print("   链接应以 http:// 或 https:// 开头")
+        sys.exit(1)
     
     # 开始处理
     result = process_wechat_article(
-        url=ARTICLE_URL,
+        url=url,
         api_token=API_TOKEN,
-        output_dir="output"  # 基础输出目录
+        output_dir=args.output
     )
+    
+    if result:
+        sys.exit(0)
+    else:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
