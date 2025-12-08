@@ -96,9 +96,9 @@ python main.py https://mp.weixin.qq.com/s/xxxxx
 python web_app.py
 ```
 
-然后打开浏览器访问 http://localhost:5000，粘贴链接即可。
+然后打开浏览器访问 http://localhost:8080，粘贴链接即可。
 
-![Web界面](docs/web-ui.png)
+![Web界面](https://pauline.oss-cn-shenzhen.aliyuncs.com/img/%E6%88%AA%E5%B1%8F2025-12-08%2023.15.53.png)
 
 ### 方式二：命令行
 
@@ -165,5 +165,5 @@ data = {
 
 ## 🙏 致谢
 
-- [MinerU](https://mineru.net) - 提供强大的文档 OCR 能力
+- [MinerU](https://mineru.net) - 提供强大的文档 OCR 能力（本项目通过 API 调用其服务，不包含 MinerU 源代码）
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) - HTML 解析
