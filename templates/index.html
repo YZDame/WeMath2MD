@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeMath2MD - 公众号文章转 Markdown</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        /* Input Card */
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgb(99 102 241 / 0.1);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Status */
+        .status {
+            margin-top: 24px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status.loading {
+            display: flex;
+            background: #f0f9ff;
+            color: #0369a1;
+        }
+
+        .status.success {
+            display: flex;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .status.error {
+            display: flex;
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Result Card */
+        .result-card {
+            display: none;
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .result-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--success), #059669);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .result-title {
+            flex: 1;
+        }
+
+        .result-title h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .result-title p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgb(99 102 241 / 0.05);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* History */
+        .history-section {
+            margin-top: 48px;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item {
+            background: var(--card);
+            padding: 16px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            transform: translateY(-2px);
+        }
+
+        .history-icon {
+            font-size: 24px;
+        }
+
+        .history-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .history-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+        }
+
+        /* Markdown Preview Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: var(--border);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .markdown-content {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 48px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .input-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .result-actions {
+                flex-direction: column;
+            }
+
+            .history-item {
+                flex-wrap: wrap;
+            }
+
+            .history-actions {
+                width: 100%;
+                margin-top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">📐</div>
+            <h1>WeMath2MD</h1>
+            <p class="subtitle">微信公众号数学文章 → Markdown 一键转换</p>
+        </header>
+
+        <!-- Input Card -->
+        <div class="card">
+            <form id="convertForm">
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <input type="text" id="urlInput" placeholder="粘贴微信公众号文章链接..." autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <span>🚀</span>
+                        <span>开始转换</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Status -->
+            <div class="status" id="status">
+                <div class="spinner"></div>
+                <span id="statusText">正在处理...</span>
+            </div>
+        </div>
+
+        <!-- Result Card -->
+        <div class="card result-card" id="resultCard">
+            <div class="result-header">
+                <div class="result-icon">✅</div>
+                <div class="result-title">
+                    <h3 id="resultTitle">转换完成</h3>
+                    <p id="resultInfo">识别了 0 张图片</p>
+                </div>
+            </div>
+            <div class="result-actions">
+                <button class="btn btn-outline" onclick="previewMarkdown()">
+                    <span>👁️</span> 预览 Markdown
+                </button>
+                <a class="btn btn-success" id="downloadZip" href="#" download>
+                    <span>📦</span> 下载 ZIP
+                </a>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="history-section" id="historySection" style="display: none;">
+            <div class="history-header">
+                <span>📜</span> 转换历史
+            </div>
+            <div class="history-list" id="historyList">
+                <!-- History items will be added here -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by <a href="https://mineru.net" target="_blank">MinerU</a> OCR</p>
+        </footer>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>📄 Markdown 预览</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre class="markdown-content" id="markdownContent">加载中...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResult = null;
+        const history = [];
+
+        // 表单提交
+        document.getElementById('convertForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                showStatus('error', '请输入文章链接');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            
+            showStatus('loading', '正在下载文章图片...');
+            
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentResult = data;
+                    showStatus('success', '转换完成！');
+                    showResult(data);
+                    addToHistory(data);
+                } else {
+                    showStatus('error', data.error || '转换失败');
+                }
+            } catch (err) {
+                showStatus('error', '网络错误，请重试');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showStatus(type, message) {
+            const status = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            
+            status.className = 'status ' + type;
+            statusText.textContent = message;
+            
+            // 自动隐藏成功/错误状态
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    if (status.classList.contains(type)) {
+                        status.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+
+        function showResult(data) {
+            const card = document.getElementById('resultCard');
+            document.getElementById('resultTitle').textContent = data.title;
+            document.getElementById('resultInfo').textContent = `识别了 ${data.image_count} 张图片`;
+            document.getElementById('downloadZip').href = `/download/zip/${encodeURIComponent(data.zip_file)}`;
+            card.classList.add('show');
+        }
+
+        function addToHistory(data) {
+            history.unshift(data);
+            if (history.length > 10) history.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const section = document.getElementById('historySection');
+            const list = document.getElementById('historyList');
+            
+            if (history.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            list.innerHTML = history.map((item, index) => `
+                <div class="history-item">
+                    <span class="history-icon">📄</span>
+                    <div class="history-info">
+                        <h4>${escapeHtml(item.title)}</h4>
+                        <p>${item.image_count} 张图片</p>
+                    </div>
+                    <div class="history-actions">
+                        <button class="btn btn-outline btn-sm" onclick="previewHistory(${index})">预览</button>
+                        <a class="btn btn-success btn-sm" href="/download/zip/${encodeURIComponent(item.zip_file)}" download>下载</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function previewMarkdown() {
+            if (!currentResult) return;
+            
+            const modal = document.getElementById('modalOverlay');
+            const content = document.getElementById('markdownContent');
+            
+            modal.classList.add('show');
+            content.textContent = '加载中...';
+            
+            try {
+                const response = await fetch(`/preview/${encodeURIComponent(currentResult.md_file)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    content.textContent = data.content;
+                } else {
+                    content.textContent = '加载失败: ' + data.error;
+                }
+            } catch (err) {
+                content.textContent = '网络错误';
+            }
+        }
+
+        async function previewHistory(index) {
+            currentResult = history[index];
+            await previewMarkdown();
+        }
+
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('modalOverlay').classList.remove('show');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ESC 关闭弹窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>

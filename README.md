@@ -11,6 +11,7 @@
 - 🔍 调用 MinerU API 进行 OCR 识别（支持数学公式）
 - 📄 自动合并多张图片的识别结果为一个 Markdown 文件
 - 📦 自动打包输出结果为 ZIP 文件
+- 🌐 **提供简洁现代的 Web 界面**
 
 ## 📁 输出目录结构
 
@@ -89,7 +90,17 @@ python main.py https://mp.weixin.qq.com/s/xxxxx
 
 ## 📖 使用方法
 
-### 方式一：命令行（推荐）
+### 方式一：Web 界面（最简单）
+
+```bash
+python web_app.py
+```
+
+然后打开浏览器访问 http://localhost:5000，粘贴链接即可。
+
+![Web界面](docs/web-ui.png)
+
+### 方式二：命令行
 
 ```bash
 # 直接传入链接
@@ -102,7 +113,7 @@ wemath2md https://mp.weixin.qq.com/s/xxxxx -o my_output
 wemath2md
 ```
 
-### 方式二：分步执行
+### 方式三：分步执行
 
 ```bash
 # 第一步：下载图片
@@ -116,7 +127,8 @@ python mineru_converter.py
 
 | 文件 | 说明 |
 |------|------|
-| `main.py` | 主程序，整合下载+转换流程 |
+| `web_app.py` | Web 界面服务 |
+| `main.py` | 命令行主程序 |
 | `downloader.py` | 下载公众号图片，提取文章标题 |
 | `mineru_converter.py` | 调用 MinerU API 识别并合并结果 |
 

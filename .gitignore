@@ -33,3 +33,7 @@ _temp_*/
 *.zip
 *.md
 !README.md
+
+# Flask
+instance/
+.webassets-cache
