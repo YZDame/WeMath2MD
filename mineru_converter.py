@@ -231,7 +231,8 @@ class MinerUConverter:
             }
         """
         
-        valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf"}
+        # MinerU API 支持的格式（不包括 GIF）
+        valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
         image_dir = Path(image_dir)
         
         images = sorted([
