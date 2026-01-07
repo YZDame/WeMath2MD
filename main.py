@@ -6,32 +6,61 @@
 使用方式:
     1. 命令行: wemath2md https://mp.weixin.qq.com/s/xxx
     2. 交互式: wemath2md (然后输入链接)
-    3. Python: python main.py https://mp.weixin.qq.com/s/xxx
+    3. 批量处理: wemath2md -f urls.txt
+    4. 详细输出: wemath2md -v https://mp.weixin.qq.com/s/xxx
+    5. 静默模式: wemath2md -q https://mp.weixin.qq.com/s/xxx
+    6. 预览模式: wemath2md --dry-run -f urls.txt
+
+命令行参数:
+    url             文章链接（可选）
+    -o, --output    输出目录（默认: output）
+    -v, --verbose   详细输出模式（DEBUG 级别）
+    -q, --quiet     静默模式（只输出错误）
+    -f, --file      从文件读取 URL 批量处理
+    --no-progress   不显示进度条
+    --dry-run       预览模式（只验证 URL）
 """
 
 import os
 import sys
 import argparse
+from pathlib import Path
+from typing import Any
 from dotenv import load_dotenv
+from tqdm import tqdm
+from logger import setup_logger, get_logger
+from config import downloader as cfg, get_mineru_token, validate_config
 from downloader import WechatImageDownloader
 from mineru_converter import MinerUConverter
+import temp_manager
 
 # 加载 .env 文件
 load_dotenv()
 
+# 初始化日志
+logger = get_logger("wemath2md")
 
-def process_wechat_article(url, api_token, output_dir="output"):
+
+def process_wechat_article(
+    url: str,
+    api_token: str,
+    output_dir: str = "output",
+    show_progress: bool = True,
+    quiet: bool = False
+) -> dict[str, Any] | None:
     """
     一站式处理微信公众号文章
-    
+
     Args:
         url: 微信公众号文章链接
         api_token: MinerU API Token
         output_dir: 输出基础目录
-    
+        show_progress: 是否显示进度条
+        quiet: 是否静默模式（只输出错误信息）
+
     Returns:
         dict: 包含所有输出路径的结果
-    
+
     输出目录结构:
         output/
         └── {文章标题}/
@@ -46,45 +75,54 @@ def process_wechat_article(url, api_token, output_dir="output"):
             │       └── ...
             └── {文章标题}.zip          ← 打包的完整结果
     """
-    
-    print("=" * 60)
-    print("🚀 微信公众号文章 → Markdown 转换工具")
-    print("=" * 60)
-    
+
+    if not quiet:
+        logger.info("=" * 60)
+        logger.info("微信公众号文章 → Markdown 转换工具")
+        logger.info("=" * 60)
+
     # ==================== 第一阶段：下载图片 ====================
-    print("\n📥 【第一阶段】下载公众号图片\n")
-    
-    downloader = WechatImageDownloader(output_dir=output_dir)
-    download_result = downloader.download_from_url(url)
-    
-    if not download_result:
-        print("❌ 下载失败，程序终止")
-        return None
-    
-    print(f"\n✅ 第一阶段完成！")
-    print(f"   文章标题: {download_result['title']}")
-    print(f"   下载图片: {len(download_result['images'])} 张")
-    
-    # ==================== 第二阶段：OCR 识别转换 ====================
-    print("\n" + "=" * 60)
-    print("\n🔄 【第二阶段】MinerU OCR 识别转换\n")
-    
-    converter = MinerUConverter(api_token=api_token)
-    convert_result = converter.convert_images(
-        image_dir=download_result['images_dir'],
-        output_dir=download_result['result_dir'],
-        output_name="converted"
-    )
-    
-    if not convert_result:
-        print("❌ 转换失败")
-        return None
-    
+    if not quiet:
+        logger.info("【第一阶段】下载公众号图片")
+
+    with tqdm(total=2, desc="总进度", disable=not show_progress or quiet, unit="阶段") as pbar:
+        pbar.set_description("下载图片中...")
+        downloader = WechatImageDownloader(output_dir=output_dir)
+        download_result = downloader.download_from_url(url)
+
+        if not download_result:
+            logger.error("下载失败，程序终止")
+            pbar.close()
+            return None
+
+        pbar.update(1)
+        if not quiet:
+            logger.info(f"第一阶段完成！文章标题: {download_result['title']}, 下载图片: {len(download_result['images'])} 张")
+
+        # ==================== 第二阶段：OCR 识别转换 ====================
+        if not quiet:
+            logger.info("【第二阶段】MinerU OCR 识别转换")
+        pbar.set_description("OCR 转换中...")
+
+        converter = MinerUConverter(api_token=api_token)
+        convert_result = converter.convert_images(
+            image_dir=download_result['images_dir'],
+            output_dir=download_result['result_dir'],
+            output_name="converted"
+        )
+
+        if not convert_result:
+            logger.error("转换失败")
+            pbar.close()
+            return None
+
+        pbar.update(1)
+        pbar.set_description("完成!")
+
     # ==================== 完成 ====================
-    print("\n" + "=" * 60)
-    print("🎉 全部完成！")
-    print("=" * 60)
-    
+    if not quiet:
+        logger.info("全部完成！")
+
     final_result = {
         'title': download_result['title'],
         'result_dir': download_result['result_dir'],
@@ -96,22 +134,19 @@ def process_wechat_article(url, api_token, output_dir="output"):
         'original_image_count': len(download_result['images']),
         'extracted_image_count': convert_result['image_count']
     }
-    
-    print(f"\n📊 最终结果:")
-    print(f"   📰 文章标题: {final_result['title']}")
-    print(f"   📁 结果目录: {final_result['result_dir']}")
-    print(f"   🖼️  原始图片: {final_result['original_image_count']} 张")
-    print(f"   📄 Markdown: {final_result['md_file']}")
-    print(f"   🖼️  提取图片: {final_result['extracted_image_count']} 张")
-    print(f"   📦 ZIP 文件: {final_result['zip_file']}")
-    
+
+    if not quiet:
+        logger.info(f"最终结果: 文章标题={final_result['title']}, 结果目录={final_result['result_dir']}, "
+                    f"原始图片={final_result['original_image_count']}张, Markdown={final_result['md_file']}, "
+                    f"提取图片={final_result['extracted_image_count']}张, ZIP={final_result['zip_file']}")
+
     return final_result
 
 
 # ============ 命令行入口 ============
-def main():
+def main() -> None:
     """命令行入口函数"""
-    
+
     # 解析命令行参数
     parser = argparse.ArgumentParser(
         prog='wemath2md',
@@ -125,53 +160,148 @@ def main():
     )
     parser.add_argument(
         '-o', '--output',
-        default='output',
-        help='输出目录 (默认: output)'
+        default=cfg.default_output_dir,
+        help=f'输出目录 (默认: {cfg.default_output_dir})'
     )
-    
+    parser.add_argument(
+        '--no-progress',
+        action='store_true',
+        help='不显示进度条'
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='详细输出模式（显示 DEBUG 级别日志）'
+    )
+    parser.add_argument(
+        '-q', '--quiet',
+        action='store_true',
+        help='静默模式（只输出错误信息）'
+    )
+    parser.add_argument(
+        '-f', '--file',
+        type=str,
+        help='从文件读取多个 URL 进行批量处理（每行一个 URL）'
+    )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='预览模式（只验证 URL，不实际处理）'
+    )
+
     args = parser.parse_args()
-    
-    # 从环境变量读取 API Token
-    API_TOKEN = os.getenv("MINERU_API_TOKEN")
-    
+
+    # 处理日志级别
+    log_level = "INFO"
+    if args.verbose:
+        log_level = "DEBUG"
+    elif args.quiet:
+        log_level = "ERROR"
+
+    # 初始化日志系统
+    from config import logging as log_cfg
+    setup_logger(level=log_level, log_file="wemath2md.log")
+
+    # 初始化临时目录清理（清理超过 24 小时的旧临时目录）
+    temp_manager.initialize_cleanup(base_dir=Path.cwd(), max_age_hours=24)
+
+    # 从配置读取 API Token
+    API_TOKEN = get_mineru_token()
+
     if not API_TOKEN:
-        print("❌ 错误: 未找到 MINERU_API_TOKEN")
-        print("   请创建 .env 文件并设置 MINERU_API_TOKEN=your_token")
-        print("   或参考 .env.example 文件")
+        logger.error("未找到 MINERU_API_TOKEN，请创建 .env 文件并设置 MINERU_API_TOKEN=your_token")
         sys.exit(1)
-    
-    # 获取文章链接
-    url = args.url
-    
-    # 如果没有提供 URL，进入交互模式
-    if not url:
-        print("=" * 60)
-        print("🚀 微信公众号文章 → Markdown 转换工具")
-        print("=" * 60)
-        print()
-        url = input("📎 请输入微信公众号文章链接: ").strip()
-        
-        if not url:
-            print("❌ 错误: 未输入链接")
+
+    # 验证配置
+    config_check = validate_config()
+    if not config_check['valid']:
+        for error in config_check['errors']:
+            logger.error(error)
+        sys.exit(1)
+
+    # 收集所有 URL
+    urls = []
+
+    # 从文件读取
+    if args.file:
+        try:
+            with open(args.file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and line.startswith('http'):
+                        urls.append(line)
+            if not urls:
+                logger.error(f"文件 '{args.file}' 中未找到有效的 URL")
+                sys.exit(1)
+            logger.info(f"从文件读取了 {len(urls)} 个 URL")
+        except FileNotFoundError:
+            logger.error(f"文件不存在: {args.file}")
             sys.exit(1)
-    
-    # 简单验证 URL
-    if not url.startswith('http'):
-        print(f"❌ 错误: 无效的链接 '{url}'")
-        print("   链接应以 http:// 或 https:// 开头")
+
+    # 从命令行参数
+    if args.url:
+        urls.append(args.url)
+
+    # 如果没有 URL，进入交互模式
+    if not urls:
+        logger.info("微信公众号文章 → Markdown 转换工具")
+        url = input("请输入微信公众号文章链接: ").strip()
+
+        if not url:
+            logger.error("未输入链接")
+            sys.exit(1)
+        urls.append(url)
+
+    # 验证所有 URL
+    valid_urls = []
+    for url in urls:
+        if url.startswith('http'):
+            valid_urls.append(url)
+        else:
+            logger.warning(f"跳过无效的链接: {url}")
+
+    if not valid_urls:
+        logger.error("没有有效的 URL 可处理")
         sys.exit(1)
-    
-    # 开始处理
-    result = process_wechat_article(
-        url=url,
-        api_token=API_TOKEN,
-        output_dir=args.output
-    )
-    
-    if result:
+
+    # 预览模式
+    if args.dry_run:
+        logger.info(f"预览模式：将处理 {len(valid_urls)} 个 URL")
+        for i, url in enumerate(valid_urls, 1):
+            logger.info(f"  {i}. {url}")
         sys.exit(0)
-    else:
-        sys.exit(1)
+
+    # 批量处理
+    success_count = 0
+    failure_count = 0
+
+    for i, url in enumerate(valid_urls, 1):
+        if len(valid_urls) > 1 and not args.quiet:
+            logger.info(f"\n{'='*60}")
+            logger.info(f"处理第 {i}/{len(valid_urls)} 个文章")
+            logger.info(f"{'='*60}\n")
+
+        result = process_wechat_article(
+            url=url,
+            api_token=API_TOKEN,
+            output_dir=args.output,
+            show_progress=not args.no_progress,
+            quiet=args.quiet
+        )
+
+        if result:
+            success_count += 1
+        else:
+            failure_count += 1
+
+    # 批量处理总结
+    if len(valid_urls) > 1 and not args.quiet:
+        logger.info(f"\n{'='*60}")
+        logger.info(f"批量处理完成！")
+        logger.info(f"成功: {success_count}, 失败: {failure_count}")
+        logger.info(f"{'='*60}")
+
+    sys.exit(0 if failure_count == 0 else 1)
 
 
 if __name__ == "__main__":

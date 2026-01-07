@@ -511,7 +511,7 @@
         // 表单提交
         document.getElementById('convertForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const url = document.getElementById('urlInput').value.trim();
             if (!url) {
                 showStatus('error', '请输入文章链接');
@@ -520,32 +520,80 @@
 
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            
-            showStatus('loading', '正在下载文章图片...');
-            
+
+            showStatus('loading', '任务已提交，正在处理...');
+
             try {
+                // 提交转换任务
                 const response = await fetch('/convert', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url })
                 });
-                
+
                 const data = await response.json();
-                
-                if (data.success) {
-                    currentResult = data;
-                    showStatus('success', '转换完成！');
-                    showResult(data);
-                    addToHistory(data);
+
+                if (data.success && data.task_id) {
+                    // 开始轮询任务状态
+                    await pollTaskStatus(data.task_id);
                 } else {
-                    showStatus('error', data.error || '转换失败');
+                    showStatus('error', data.error || '任务提交失败');
+                    submitBtn.disabled = false;
                 }
             } catch (err) {
                 showStatus('error', '网络错误，请重试');
-            } finally {
                 submitBtn.disabled = false;
             }
         });
+
+        // 轮询任务状态
+        async function pollTaskStatus(taskId) {
+            const pollInterval = 2000; // 2秒轮询一次
+            const maxAttempts = 300;   // 最多轮询 10 分钟
+
+            for (let i = 0; i < maxAttempts; i++) {
+                try {
+                    const response = await fetch(`/status/${taskId}`);
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        showStatus('error', '任务不存在');
+                        document.getElementById('submitBtn').disabled = false;
+                        return;
+                    }
+
+                    // 更新进度
+                    if (data.progress) {
+                        showStatus('loading', data.progress);
+                    }
+
+                    // 检查任务状态
+                    if (data.state === 'done') {
+                        currentResult = data.result;
+                        showStatus('success', '转换完成！');
+                        showResult(data.result);
+                        addToHistory(data.result);
+                        document.getElementById('submitBtn').disabled = false;
+                        return;
+                    } else if (data.state === 'failed') {
+                        showStatus('error', data.error || '转换失败');
+                        document.getElementById('submitBtn').disabled = false;
+                        return;
+                    }
+
+                    // 继续轮询
+                    await new Promise(resolve => setTimeout(resolve, pollInterval));
+                } catch (err) {
+                    showStatus('error', '查询状态失败');
+                    document.getElementById('submitBtn').disabled = false;
+                    return;
+                }
+            }
+
+            // 超时
+            showStatus('error', '任务处理超时');
+            document.getElementById('submitBtn').disabled = false;
+        }
 
         function showStatus(type, message) {
             const status = document.getElementById('status');
