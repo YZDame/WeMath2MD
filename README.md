@@ -2,8 +2,8 @@
 
 微信公众号数学文章转 Markdown 工具 📐→📝
 
-[![CI](https://github.com/YOUR_USERNAME/WeMath2MD/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/WeMath2MD/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/YOUR_USERNAME/WeMath2MD/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/WeMath2MD)
+[![CI](https://github.com/yzdame/WeMath2MD/actions/workflows/ci.yml/badge.svg)](https://github.com/yzdame/WeMath2MD/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/yzdame/WeMath2MD/branch/main/graph/badge.svg)](https://codecov.io/gh/yzdame/WeMath2MD)
 
 将微信公众号中的数学讲义/文章图片批量下载，通过 [MinerU](https://mineru.net) OCR API 识别，自动合并为一个完整的 Markdown 文件。
 
