@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WeMath2MD - 公众号文章转 Markdown</title>
+    <!-- KaTeX for math formula rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -351,6 +357,7 @@
             max-height: 80vh;
             display: flex;
             flex-direction: column;
+            border: 1px solid #e5e5e5;
         }
 
         .modal-header {
@@ -366,6 +373,60 @@
             letter-spacing: 1px;
             text-transform: uppercase;
             color: #666666;
+            margin: 0;
+        }
+
+        .modal-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* View Toggle Switch */
+        .view-toggle {
+            display: flex;
+            align-items: center;
+        }
+
+        .view-toggle-icons {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 7px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .view-toggle-icon {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .view-toggle-icon:hover {
+            opacity: 0.7;
+        }
+
+        .view-toggle-icon.active {
+            opacity: 1;
+            background: #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .view-toggle-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: #000000;
+            stroke-width: 1.5;
+            fill: none;
+            display: block;
         }
 
         .modal-close {
@@ -399,10 +460,149 @@
 
         .markdown-content {
             font-family: system-ui, -apple-system, sans-serif;
-            font-size: 13px;
+            font-size: 15px;
             line-height: 1.7;
-            white-space: pre-wrap;
             word-break: break-word;
+        }
+
+        /* Source code view */
+        .markdown-content.source-view {
+            white-space: pre-wrap;
+        }
+
+        /* Rendered Markdown view */
+        .markdown-content.rendered-view {
+            white-space: normal;
+        }
+
+        .markdown-content.rendered-view h1,
+        .markdown-content.rendered-view h2,
+        .markdown-content.rendered-view h3,
+        .markdown-content.rendered-view h4,
+        .markdown-content.rendered-view h5,
+        .markdown-content.rendered-view h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .markdown-content.rendered-view h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 0.3em;
+        }
+
+        .markdown-content.rendered-view h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 0.3em;
+        }
+
+        .markdown-content.rendered-view h3 {
+            font-size: 1.25em;
+        }
+
+        .markdown-content.rendered-view p {
+            margin-bottom: 16px;
+        }
+
+        .markdown-content.rendered-view a {
+            color: #000000;
+            text-decoration: underline;
+        }
+
+        .markdown-content.rendered-view strong {
+            font-weight: 600;
+        }
+
+        .markdown-content.rendered-view em {
+            font-style: italic;
+        }
+
+        .markdown-content.rendered-view code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+
+        .markdown-content.rendered-view pre {
+            background: #f5f5f5;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content.rendered-view pre code {
+            background: none;
+            padding: 0;
+            font-size: 14px;
+        }
+
+        .markdown-content.rendered-view blockquote {
+            border-left: 4px solid #e5e5e5;
+            padding-left: 16px;
+            margin: 16px 0;
+            color: #666666;
+        }
+
+        .markdown-content.rendered-view ul,
+        .markdown-content.rendered-view ol {
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content.rendered-view li {
+            margin-bottom: 4px;
+        }
+
+        .markdown-content.rendered-view img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+
+        .markdown-content.rendered-view table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content.rendered-view table th,
+        .markdown-content.rendered-view table td {
+            border: 1px solid #e5e5e5;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .markdown-content.rendered-view table th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+
+        .markdown-content.rendered-view hr {
+            border: none;
+            border-top: 1px solid #e5e5e5;
+            margin: 24px 0;
+        }
+
+        /* KaTeX Math Styles */
+        .markdown-content.rendered-view .katex {
+            font-size: 1.1em;
+        }
+
+        .markdown-content.rendered-view .katex-display {
+            margin: 24px 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .markdown-content.rendered-view .katex-display > .katex {
+            text-align: left;
         }
 
         /* Footer */
@@ -583,10 +783,28 @@
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <h3>Markdown 预览</h3>
-                <button class="modal-close" onclick="closeModal()">×</button>
+                <div class="modal-header-controls">
+                    <div class="view-toggle">
+                        <div class="view-toggle-icons">
+                            <div class="view-toggle-icon" id="sourceIcon" onclick="setViewMode('source')" title="源代码">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <polyline points="16 18 22 12 16 6"></polyline>
+                                    <polyline points="8 6 2 12 8 18"></polyline>
+                                </svg>
+                            </div>
+                            <div class="view-toggle-icon active" id="renderedIcon" onclick="setViewMode('rendered')" title="渲染效果">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="modal-close" onclick="closeModal()">×</button>
+                </div>
             </div>
             <div class="modal-body">
-                <pre class="markdown-content" id="markdownContent">加载中...</pre>
+                <div class="markdown-content rendered-view" id="markdownContent">加载中...</div>
             </div>
         </div>
     </div>
@@ -596,6 +814,8 @@
 
     <script>
         let currentResult = null;
+        let currentMarkdown = '';
+        let viewMode = 'rendered'; // 'source' or 'rendered'
         const history = [];
 
         // Toast notification
@@ -758,6 +978,9 @@
         async function previewMarkdown() {
             if (!currentResult) return;
 
+            // Reset to rendered view when opening new preview
+            setViewMode('rendered');
+
             const modal = document.getElementById('modalOverlay');
             const content = document.getElementById('markdownContent');
 
@@ -769,12 +992,59 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    content.textContent = data.content;
+                    currentMarkdown = data.content;
+                    updateMarkdownContent();
                 } else {
                     content.textContent = '加载失败: ' + data.error;
                 }
             } catch (err) {
                 content.textContent = '网络错误';
+            }
+        }
+
+        // Set view mode (source or rendered)
+        function setViewMode(mode) {
+            viewMode = mode;
+            const sourceIcon = document.getElementById('sourceIcon');
+            const renderedIcon = document.getElementById('renderedIcon');
+            const content = document.getElementById('markdownContent');
+
+            if (mode === 'source') {
+                sourceIcon.classList.add('active');
+                renderedIcon.classList.remove('active');
+                content.classList.remove('rendered-view');
+                content.classList.add('source-view');
+            } else {
+                renderedIcon.classList.add('active');
+                sourceIcon.classList.remove('active');
+                content.classList.remove('source-view');
+                content.classList.add('rendered-view');
+            }
+
+            updateMarkdownContent();
+        }
+
+        // Update markdown content based on current view mode
+        function updateMarkdownContent() {
+            const content = document.getElementById('markdownContent');
+
+            if (viewMode === 'source') {
+                content.textContent = currentMarkdown;
+            } else {
+                // Render markdown using marked.js
+                content.innerHTML = marked.parse(currentMarkdown);
+
+                // Render math formulas using KaTeX
+                renderMathInElement(content, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ],
+                    throwOnError: false,
+                    trust: true
+                });
             }
         }
 
