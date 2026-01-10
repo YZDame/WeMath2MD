@@ -42,7 +42,7 @@
       ]
     },
     "win": {
-      "target": ["nsis"],
+      "target": ["zip"],
       "extraResources": [
         {
           "from": "python",
@@ -59,9 +59,6 @@
           "to": "python"
         }
       ]
-    },
-    "nsis": {
-      "oneClick": true
     }
   }
 }
