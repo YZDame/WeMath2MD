@@ -49,7 +49,7 @@ jobs:
       - name: Prepare Python files for packaging
         run: |
           cd desktop-app
-          mkdir -p python
+          mkdir python
           cp ../desktop_backend.py python/
           cp ../config.py python/
           cp ../downloader.py python/
@@ -63,19 +63,13 @@ jobs:
 
       - name: Build on Windows
         if: matrix.os == 'windows-latest'
-        continue-on-error: true
-        run: cd desktop-app && npm run build:win
+        run: cd desktop-app; npm run build:win
 
       - name: Build on Linux
         if: matrix.os == 'ubuntu-latest'
         run: cd desktop-app && npm run build:linux
 
-      - name: List build output
-        if: always()
-        run: ls -la desktop-app/dist || dir desktop-app\dist
-
       - name: Upload artifacts
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: wemath2md-${{ matrix.platform }}
@@ -97,11 +91,10 @@ jobs:
       - name: Collect installer files
         run: |
           mkdir -p release
-          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" \) -exec cp {} release/ \;
+          find artifacts -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" \) -exec cp {} release/ \;
           ls -la release
 
       - name: Create Release
-        if: hashFiles('release/*') != ''
         uses: softprops/action-gh-release@v1
         with:
           files: release/*
