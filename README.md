@@ -110,7 +110,7 @@ python web_app.py
 - 实时进度显示（10% → 50% → 100%）
 - 支持 Markdown 预览和下载
 
-![Web界面](https://pauline.oss-cn-shenzhen.aliyuncs.com/img/%E6%88%AA%E5%B1%8F2025-12-08%2023.15.53.png)
+![Web界面](https://pauline.oss-cn-shenzhen.aliyuncs.com/img/screencapture-localhost-8080-2026-01-10-22_20_00.png)
 
 ### 方式二：命令行
 
