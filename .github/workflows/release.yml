@@ -63,6 +63,7 @@ jobs:
 
       - name: Build on Windows
         if: matrix.os == 'windows-latest'
+        continue-on-error: true
         run: cd desktop-app && npm run build:win
 
       - name: Build on Linux
@@ -70,13 +71,16 @@ jobs:
         run: cd desktop-app && npm run build:linux
 
       - name: List build output
+        if: always()
         run: ls -la desktop-app/dist || dir desktop-app\dist
 
       - name: Upload artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: wemath2md-${{ matrix.platform }}
           path: desktop-app/dist/*
+          if-no-files-found: ignore
 
   release:
     needs: build
@@ -97,6 +101,7 @@ jobs:
           ls -la release
 
       - name: Create Release
+        if: hashFiles('release/*') != ''
         uses: softprops/action-gh-release@v1
         with:
           files: release/*

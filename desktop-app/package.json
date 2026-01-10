@@ -61,9 +61,7 @@
       ]
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["zh_CN", "en_US"]
+      "oneClick": true
     }
   }
 }
