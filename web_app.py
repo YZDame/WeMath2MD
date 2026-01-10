@@ -169,9 +169,10 @@ def index() -> str:
 
 @app.route('/convert', methods=['POST'])
 def convert() -> Response:
-    """处理转换请求 - 异步模式"""
+    """处理转换请求 - 异步模式，支持用户传入 API Token"""
     data = request.get_json()
     url = data.get('url', '').strip()
+    user_api_token = data.get('api_token', '').strip()  # 用户传入的 Token
 
     logger.info(f"收到转换请求: {url}")
 
@@ -181,10 +182,10 @@ def convert() -> Response:
     if not url.startswith('http'):
         return jsonify({'success': False, 'error': '无效的链接格式'})
 
-    # 获取 API Token
-    api_token = get_mineru_token()
+    # 优先使用用户传入的 Token，如果没有则使用服务器配置的 Token
+    api_token = user_api_token or get_mineru_token()
     if not api_token:
-        return jsonify({'success': False, 'error': '服务器未配置 API Token'})
+        return jsonify({'success': False, 'error': '请提供 MinerU API Token'})
 
     # 生成任务 ID
     task_id = str(uuid.uuid4())

@@ -438,10 +438,22 @@
         <!-- Input Card -->
         <div class="card">
             <form id="convertForm">
-                <div class="input-group">
+                <div class="input-group" style="flex-direction: column; gap: 12px;">
+                    <!-- Token 输入 -->
                     <div class="input-wrapper">
-                        <input type="text" id="urlInput" placeholder="粘贴微信公众号文章链接..." autocomplete="off">
+                        <input type="password" id="apiToken"
+                               placeholder="MinerU API Token (从 mineru.net 获取)"
+                               autocomplete="off">
                     </div>
+
+                    <!-- URL 输入 -->
+                    <div class="input-wrapper">
+                        <input type="text" id="urlInput"
+                               placeholder="粘贴微信公众号文章链接..."
+                               autocomplete="off">
+                    </div>
+
+                    <!-- 提交按钮 -->
                     <button type="submit" class="btn btn-primary" id="submitBtn">
                         <span>🚀</span>
                         <span>开始转换</span>
@@ -512,7 +524,14 @@
         document.getElementById('convertForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            const apiToken = document.getElementById('apiToken').value.trim();
             const url = document.getElementById('urlInput').value.trim();
+
+            if (!apiToken) {
+                showStatus('error', '请输入 MinerU API Token');
+                return;
+            }
+
             if (!url) {
                 showStatus('error', '请输入文章链接');
                 return;
@@ -524,11 +543,11 @@
             showStatus('loading', '任务已提交，正在处理...');
 
             try {
-                // 提交转换任务
+                // 提交转换任务，包含 Token
                 const response = await fetch('/convert', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
+                    body: JSON.stringify({ url, api_token: apiToken })
                 });
 
                 const data = await response.json();
