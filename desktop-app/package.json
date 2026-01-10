@@ -33,6 +33,7 @@
     ],
     "mac": {
       "category": "public.app-category.utilities",
+      "icon": "assets/icon.icns",
       "target": ["dmg"],
       "extraResources": [
         {
@@ -42,6 +43,7 @@
       ]
     },
     "win": {
+      "icon": "assets/icon.png",
       "target": ["zip"],
       "extraResources": [
         {
@@ -52,6 +54,7 @@
     },
     "linux": {
       "category": "Utility",
+      "icon": "assets/icon.png",
       "target": ["AppImage"],
       "extraResources": [
         {
