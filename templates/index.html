@@ -11,156 +11,220 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --success: #10b981;
-            --error: #ef4444;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
-            --text-secondary: #64748b;
-            --border: #e2e8f0;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #ffffff;
+            color: #000000;
             min-height: 100vh;
             padding: 40px 20px;
         }
 
         .container {
-            max-width: 720px;
+            max-width: 600px;
             margin: 0 auto;
+            position: relative;
+        }
+
+        /* GitHub Icon */
+        .github-link {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            text-decoration: none;
+            border-radius: 12px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .github-link:hover {
+            background: #000000;
+            transform: scale(1.1);
+        }
+
+        .github-link:hover svg {
+            fill: #ffffff;
+        }
+
+        .github-link svg {
+            width: 22px;
+            height: 22px;
+            fill: #000000;
+            transition: fill 0.3s;
         }
 
         /* Header */
         .header {
             text-align: center;
-            margin-bottom: 48px;
+            margin-bottom: 40px;
+            padding-bottom: 24px;
         }
 
-        .logo {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        h1 {
-            font-size: 32px;
+        .header h1 {
+            font-size: 36px;
             font-weight: 700;
+            letter-spacing: 1px;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
-        .subtitle {
-            color: var(--text-secondary);
-            font-size: 16px;
+        .header p {
+            font-size: 14px;
+            color: #666666;
         }
 
-        /* Input Card */
+        /* Card */
         .card {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 32px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            margin-bottom: 24px;
+            background: #ffffff;
+            padding: 28px 32px;
+            margin-bottom: 20px;
         }
 
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #666666;
+            letter-spacing: 0.5px;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        /* Input Group */
         .input-group {
             display: flex;
-            gap: 12px;
+            flex-direction: column;
+            gap: 14px;
         }
 
-        .input-wrapper {
-            flex: 1;
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 15px;
+            border: 1px solid #000000;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #000000;
+            outline: none;
+            transition: background 0.15s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            background: #f5f5f5;
+        }
+
+        input[type="text"]::placeholder,
+        input[type="password"]::placeholder {
+            color: #999999;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: #666666;
+            margin-top: -8px;
+            margin-bottom: 4px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #000000;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
             position: relative;
         }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 16px 20px;
-            font-size: 16px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            outline: none;
-            transition: all 0.2s;
+        .btn:hover {
+            background: #000000;
+            color: #ffffff;
+            transform: scale(1.05);
         }
 
-        input[type="text"]:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgb(99 102 241 / 0.1);
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: #ffffff;
+            color: #000000;
+            transform: none;
         }
 
-        input[type="text"]::placeholder {
-            color: var(--text-secondary);
-        }
-
-        .btn {
-            padding: 16px 32px;
-            font-size: 16px;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+        .btn-outline {
+            background: #ffffff;
+            color: #000000;
+            border: 1px solid #000000;
         }
 
         .btn-primary {
-            background: var(--primary);
-            color: white;
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            background: #ffffff;
+            color: #000000;
+            border: 1px solid #000000;
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
+            background: #000000;
+            color: #ffffff;
         }
 
-        .btn-primary:disabled {
-            background: var(--text-secondary);
-            cursor: not-allowed;
-            transform: none;
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
         }
 
         /* Status */
         .status {
-            margin-top: 24px;
-            padding: 16px 20px;
-            border-radius: 12px;
+            margin-top: 18px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            background: #f5f5f5;
             display: none;
             align-items: center;
             gap: 12px;
+            font-size: 14px;
         }
 
         .status.loading {
             display: flex;
-            background: #f0f9ff;
-            color: #0369a1;
         }
 
         .status.success {
             display: flex;
-            background: #f0fdf4;
-            color: #166534;
         }
 
         .status.error {
             display: flex;
-            background: #fef2f2;
-            color: #dc2626;
+            background: #f5f5f5;
+        }
+
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
         .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid currentColor;
+            width: 18px;
+            height: 18px;
+            border: 1.5px solid #000000;
             border-top-color: transparent;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
@@ -180,104 +244,59 @@
         }
 
         .result-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            padding-bottom: 16px;
             margin-bottom: 20px;
         }
 
-        .result-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--success), #059669);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-
         .result-title {
-            flex: 1;
-        }
-
-        .result-title h3 {
             font-size: 18px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
-        .result-title p {
-            color: var(--text-secondary);
+        .result-info {
             font-size: 14px;
+            color: #666666;
         }
 
         .result-actions {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--border);
-            color: var(--text);
-        }
-
-        .btn-outline:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: rgb(99 102 241 / 0.05);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #059669;
         }
 
         /* History */
         .history-section {
-            margin-top: 48px;
+            margin-top: 32px;
+            padding-top: 24px;
         }
 
         .history-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
             margin-bottom: 16px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
+            color: #666666;
+            letter-spacing: 1px;
         }
 
         .history-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .history-item {
-            background: var(--card);
-            padding: 16px 20px;
             border-radius: 12px;
+            padding: 16px 18px;
             display: flex;
-            align-items: center;
             gap: 16px;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-            transition: all 0.2s;
+            align-items: center;
+            background: #f5f5f5;
+            transition: background 0.15s;
         }
 
         .history-item:hover {
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            transform: translateY(-2px);
-        }
-
-        .history-icon {
-            font-size: 24px;
+            background: #e5e5e5;
         }
 
         .history-info {
@@ -285,39 +304,34 @@
             min-width: 0;
         }
 
-        .history-info h4 {
+        .history-title {
             font-size: 15px;
-            font-weight: 600;
+            font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
-        .history-info p {
-            font-size: 13px;
-            color: var(--text-secondary);
+        .history-meta {
+            font-size: 12px;
+            color: #666666;
         }
 
         .history-actions {
             display: flex;
             gap: 8px;
+            flex-shrink: 0;
         }
 
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 14px;
-            border-radius: 8px;
-        }
-
-        /* Markdown Preview Modal */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.95);
             display: none;
             align-items: center;
             justify-content: center;
@@ -330,55 +344,63 @@
         }
 
         .modal {
-            background: var(--card);
+            background: #ffffff;
             border-radius: 16px;
             width: 100%;
             max-width: 800px;
             max-height: 80vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
         }
 
         .modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
+            padding: 18px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
         .modal-header h3 {
-            font-size: 18px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #666666;
         }
 
         .modal-close {
             width: 32px;
             height: 32px;
-            border: none;
-            background: var(--bg);
             border-radius: 8px;
+            background: #ffffff;
             cursor: pointer;
             font-size: 18px;
+            font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
+            line-height: 1;
+            transition: all 0.15s;
+            color: #000000;
+            border: 1px solid #000000;
         }
 
         .modal-close:hover {
-            background: var(--border);
+            background: #000000;
+            color: #ffffff;
+            transform: scale(1.1);
         }
 
         .modal-body {
-            padding: 24px;
+            padding: 20px 24px;
             overflow-y: auto;
             flex: 1;
         }
 
         .markdown-content {
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 14px;
-            line-height: 1.6;
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 13px;
+            line-height: 1.7;
             white-space: pre-wrap;
             word-break: break-word;
         }
@@ -386,29 +408,79 @@
         /* Footer */
         .footer {
             text-align: center;
-            margin-top: 48px;
-            color: var(--text-secondary);
-            font-size: 14px;
+            margin-top: 40px;
+            padding-top: 20px;
+            font-size: 13px;
+            color: #666666;
         }
 
         .footer a {
-            color: var(--primary);
+            color: #000000;
             text-decoration: none;
+            font-weight: 500;
         }
 
         .footer a:hover {
             text-decoration: underline;
         }
 
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000000;
+            color: #ffffff;
+            padding: 14px 24px;
+            border-radius: 10px;
+            display: none;
+            z-index: 2000;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideDown 0.2s;
+        }
+
+        .toast.error {
+            background: #ffffff;
+            color: #000000;
+            border: 1px solid #000000;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-10px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
         /* Responsive */
         @media (max-width: 640px) {
-            .input-group {
-                flex-direction: column;
+            body {
+                padding: 24px 16px;
             }
 
-            .btn {
-                width: 100%;
-                justify-content: center;
+            .github-link {
+                top: 16px;
+                right: 16px;
+                width: 40px;
+                height: 40px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .card {
+                padding: 20px 20px;
             }
 
             .result-actions {
@@ -417,81 +489,84 @@
 
             .history-item {
                 flex-wrap: wrap;
+                padding: 14px 16px;
             }
 
             .history-actions {
                 width: 100%;
-                margin-top: 8px;
+                margin-top: 10px;
+                justify-content: flex-end;
+            }
+
+            .toast {
+                left: 16px;
+                right: 16px;
+                transform: none;
+                width: auto;
             }
         }
     </style>
 </head>
 <body>
+    <!-- GitHub Link -->
+    <a href="https://github.com/YZDame/WeMath2MD" target="_blank" class="github-link" aria-label="View on GitHub">
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+    </a>
+
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="logo">📐</div>
             <h1>WeMath2MD</h1>
-            <p class="subtitle">微信公众号数学文章 → Markdown 一键转换</p>
+            <p>微信公众号数学文章转换为 Markdown</p>
         </header>
 
-        <!-- Input Card -->
+        <!-- API Token Card (Optional) -->
         <div class="card">
+            <div class="card-title">MinerU API Token（可选）</div>
+            <div class="input-group">
+                <input type="password" id="apiToken"
+                       placeholder="留空使用服务器默认 API Token"
+                       autocomplete="off">
+                <div class="input-hint">留空则使用服务器配置的默认 Token</div>
+            </div>
+        </div>
+
+        <!-- URL Input Card -->
+        <div class="card">
+            <div class="card-title">文章链接</div>
             <form id="convertForm">
-                <div class="input-group" style="flex-direction: column; gap: 12px;">
-                    <!-- Token 输入 -->
-                    <div class="input-wrapper">
-                        <input type="password" id="apiToken"
-                               placeholder="MinerU API Token (从 mineru.net 获取)"
-                               autocomplete="off">
-                    </div>
-
-                    <!-- URL 输入 -->
-                    <div class="input-wrapper">
-                        <input type="text" id="urlInput"
-                               placeholder="粘贴微信公众号文章链接..."
-                               autocomplete="off">
-                    </div>
-
-                    <!-- 提交按钮 -->
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                        <span>🚀</span>
-                        <span>开始转换</span>
-                    </button>
+                <div class="input-group">
+                    <input type="text" id="urlInput"
+                           placeholder="粘贴微信公众号文章链接..."
+                           autocomplete="off">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">开始转换</button>
                 </div>
             </form>
 
             <!-- Status -->
             <div class="status" id="status">
-                <div class="spinner"></div>
-                <span id="statusText">正在处理...</span>
+                <div class="status-icon" id="statusIcon"></div>
+                <span id="statusText">准备就绪</span>
             </div>
         </div>
 
         <!-- Result Card -->
         <div class="card result-card" id="resultCard">
             <div class="result-header">
-                <div class="result-icon">✅</div>
-                <div class="result-title">
-                    <h3 id="resultTitle">转换完成</h3>
-                    <p id="resultInfo">识别了 0 张图片</p>
-                </div>
+                <div class="result-title" id="resultTitle">转换完成</div>
+                <div class="result-info" id="resultInfo">识别了 0 张图片</div>
             </div>
             <div class="result-actions">
-                <button class="btn btn-outline" onclick="previewMarkdown()">
-                    <span>👁️</span> 预览 Markdown
-                </button>
-                <a class="btn btn-success" id="downloadZip" href="#" download>
-                    <span>📦</span> 下载 ZIP
-                </a>
+                <button class="btn btn-outline" onclick="previewMarkdown()">预览 Markdown</button>
+                <a class="btn btn-outline" id="downloadZip" href="#" download>下载 ZIP 包</a>
             </div>
         </div>
 
         <!-- History Section -->
         <div class="history-section" id="historySection" style="display: none;">
-            <div class="history-header">
-                <span>📜</span> 转换历史
-            </div>
+            <div class="history-header">转换历史</div>
             <div class="history-list" id="historyList">
                 <!-- History items will be added here -->
             </div>
@@ -499,7 +574,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Powered by <a href="https://mineru.net" target="_blank">MinerU</a> OCR</p>
+            <p>Powered by <a href="https://mineru.net" target="_blank">MinerU</a></p>
         </footer>
     </div>
 
@@ -507,8 +582,8 @@
     <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>📄 Markdown 预览</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <h3>Markdown 预览</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
             </div>
             <div class="modal-body">
                 <pre class="markdown-content" id="markdownContent">加载中...</pre>
@@ -516,24 +591,38 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
     <script>
         let currentResult = null;
         const history = [];
 
-        // 表单提交
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Form submit
         document.getElementById('convertForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const apiToken = document.getElementById('apiToken').value.trim();
             const url = document.getElementById('urlInput').value.trim();
+            const apiToken = document.getElementById('apiToken').value.trim();
 
-            if (!apiToken) {
-                showStatus('error', '请输入 MinerU API Token');
+            if (!url) {
+                showToast('请输入文章链接', 'error');
                 return;
             }
 
-            if (!url) {
-                showStatus('error', '请输入文章链接');
+            // Validate URL format
+            if (!url.includes('mp.weixin.qq.com')) {
+                showToast('请输入有效的微信公众号链接', 'error');
                 return;
             }
 
@@ -543,7 +632,6 @@
             showStatus('loading', '任务已提交，正在处理...');
 
             try {
-                // 提交转换任务，包含 Token
                 const response = await fetch('/convert', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -553,7 +641,6 @@
                 const data = await response.json();
 
                 if (data.success && data.task_id) {
-                    // 开始轮询任务状态
                     await pollTaskStatus(data.task_id);
                 } else {
                     showStatus('error', data.error || '任务提交失败');
@@ -565,10 +652,10 @@
             }
         });
 
-        // 轮询任务状态
+        // Poll task status
         async function pollTaskStatus(taskId) {
-            const pollInterval = 2000; // 2秒轮询一次
-            const maxAttempts = 300;   // 最多轮询 10 分钟
+            const pollInterval = 2000;
+            const maxAttempts = 300;
 
             for (let i = 0; i < maxAttempts; i++) {
                 try {
@@ -581,26 +668,25 @@
                         return;
                     }
 
-                    // 更新进度
                     if (data.progress) {
                         showStatus('loading', data.progress);
                     }
 
-                    // 检查任务状态
                     if (data.state === 'done') {
                         currentResult = data.result;
-                        showStatus('success', '转换完成！');
+                        showStatus('success', '转换完成');
                         showResult(data.result);
                         addToHistory(data.result);
                         document.getElementById('submitBtn').disabled = false;
+                        showToast('转换成功完成', 'success');
                         return;
                     } else if (data.state === 'failed') {
                         showStatus('error', data.error || '转换失败');
                         document.getElementById('submitBtn').disabled = false;
+                        showToast('转换失败: ' + (data.error || '未知错误'), 'error');
                         return;
                     }
 
-                    // 继续轮询
                     await new Promise(resolve => setTimeout(resolve, pollInterval));
                 } catch (err) {
                     showStatus('error', '查询状态失败');
@@ -609,25 +695,25 @@
                 }
             }
 
-            // 超时
             showStatus('error', '任务处理超时');
             document.getElementById('submitBtn').disabled = false;
+            showToast('任务处理超时，请重试', 'error');
         }
 
         function showStatus(type, message) {
             const status = document.getElementById('status');
             const statusText = document.getElementById('statusText');
-            
+            const statusIcon = document.getElementById('statusIcon');
+
             status.className = 'status ' + type;
             statusText.textContent = message;
-            
-            // 自动隐藏成功/错误状态
-            if (type !== 'loading') {
-                setTimeout(() => {
-                    if (status.classList.contains(type)) {
-                        status.style.display = 'none';
-                    }
-                }, 5000);
+
+            if (type === 'loading') {
+                statusIcon.innerHTML = '<div class="spinner"></div>';
+            } else if (type === 'success') {
+                statusIcon.textContent = '✓';
+            } else if (type === 'error') {
+                statusIcon.textContent = '✕';
             }
         }
 
@@ -648,23 +734,22 @@
         function renderHistory() {
             const section = document.getElementById('historySection');
             const list = document.getElementById('historyList');
-            
+
             if (history.length === 0) {
                 section.style.display = 'none';
                 return;
             }
-            
+
             section.style.display = 'block';
             list.innerHTML = history.map((item, index) => `
                 <div class="history-item">
-                    <span class="history-icon">📄</span>
                     <div class="history-info">
-                        <h4>${escapeHtml(item.title)}</h4>
-                        <p>${item.image_count} 张图片</p>
+                        <div class="history-title">${escapeHtml(item.title)}</div>
+                        <div class="history-meta">${item.image_count} 张图片</div>
                     </div>
                     <div class="history-actions">
-                        <button class="btn btn-outline btn-sm" onclick="previewHistory(${index})">预览</button>
-                        <a class="btn btn-success btn-sm" href="/download/zip/${encodeURIComponent(item.zip_file)}" download>下载</a>
+                        <button class="btn btn-small btn-outline" onclick="previewHistory(${index})">预览</button>
+                        <a class="btn btn-small btn-outline" href="/download/zip/${encodeURIComponent(item.zip_file)}" download>下载</a>
                     </div>
                 </div>
             `).join('');
@@ -672,17 +757,17 @@
 
         async function previewMarkdown() {
             if (!currentResult) return;
-            
+
             const modal = document.getElementById('modalOverlay');
             const content = document.getElementById('markdownContent');
-            
+
             modal.classList.add('show');
             content.textContent = '加载中...';
-            
+
             try {
                 const response = await fetch(`/preview/${encodeURIComponent(currentResult.md_file)}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     content.textContent = data.content;
                 } else {
