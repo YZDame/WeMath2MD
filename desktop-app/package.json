@@ -33,13 +33,7 @@
     ],
     "mac": {
       "category": "public.app-category.utilities",
-      "icon": "assets/icon.icns",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": ["x64", "arm64"]
-        }
-      ],
+      "target": ["dmg"],
       "extraResources": [
         {
           "from": "python",
@@ -48,13 +42,7 @@
       ]
     },
     "win": {
-      "icon": "assets/icon.ico",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        }
-      ],
+      "target": ["nsis"],
       "extraResources": [
         {
           "from": "python",
@@ -64,8 +52,7 @@
     },
     "linux": {
       "category": "Utility",
-      "icon": "assets/icon.png",
-      "target": ["AppImage", "deb"],
+      "target": ["AppImage"],
       "extraResources": [
         {
           "from": "python",
