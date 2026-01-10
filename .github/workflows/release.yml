@@ -70,7 +70,7 @@ jobs:
         run: cd desktop-app && npm run build:linux
 
       - name: List build output
-        run: ls -R desktop-app/dist || dir desktop-app\dist /s
+        run: ls -la desktop-app/dist || dir desktop-app\dist
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -90,13 +90,16 @@ jobs:
         with:
           path: artifacts
 
-      - name: Display structure of downloaded files
-        run: ls -R artifacts
+      - name: Collect installer files
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" \) -exec cp {} release/ \;
+          ls -la release
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/**/*
+          files: release/*
           draft: false
           prerelease: false
           generate_release_notes: true
