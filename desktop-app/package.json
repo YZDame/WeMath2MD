@@ -26,6 +26,7 @@
       "output": "dist",
       "buildResources": "assets"
     },
+    "afterSign": "afterSign.js",
     "files": [
       "src/**/*",
       "python/**/*",
@@ -36,6 +37,10 @@
       "category": "public.app-category.utilities",
       "icon": "assets/icon.icns",
       "target": ["dmg"],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "assets/entitlements.plist",
+      "entitlementsInherit": "assets/entitlements.plist",
       "extraResources": [
         {
           "from": "python",

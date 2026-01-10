@@ -28,6 +28,15 @@
 
 从 [Releases](https://github.com/yzdame/WeMath2MD/releases) 下载安装包。
 
+**macOS 用户注意**：
+
+应用未签名，安装时请：
+
+1. 右键点击应用选择"打开"
+2. 或在"系统设置 → 隐私与安全性"中点击"仍要打开"
+
+详见 [macOS安装说明.md](macOS安装说明.md)
+
 ### 从源码构建
 
 ```bash
