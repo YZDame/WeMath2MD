@@ -1,0 +1,144 @@
+name: Build Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            platform: mac
+            arch: universal
+          - os: windows-latest
+            platform: win
+            arch: x64
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: desktop-app/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Node dependencies
+        run: |
+          cd desktop-app
+          npm ci
+
+      - name: Prepare Python files for packaging
+        run: |
+          cd desktop-app
+          mkdir -p python
+          cp ../desktop_backend.py python/
+          cp ../config.py python/
+          cp ../downloader.py python/
+          cp ../mineru_converter.py python/
+          cp ../logger.py python/
+          cp ../temp_manager.py python/
+
+      - name: Build on macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd desktop-app
+          npm run build:mac
+          # 修复 DMG 权限
+          chmod +x dist/*.dmg || true
+
+      - name: Build on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd desktop-app
+          npm run build:win
+
+      - name: Build on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd desktop-app
+          npm run build:linux
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wemath2md-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            desktop-app/dist/*.dmg
+            desktop-app/dist/*.exe
+            desktop-app/dist/*.zip
+            desktop-app/dist/*.AppImage
+            desktop-app/dist/*.deb
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## WeMath2MD Desktop 安装包
+
+            下载对应平台的安装包：
+
+            - **Windows**: `.exe` 安装程序
+            - **macOS**: `.dmg` 镜像文件
+            - **Linux**: `.AppImage` 或 `.deb` 包
+
+            ## 使用说明
+
+            1. 下载并安装应用
+            2. 获取 [MinerU API Token](https://mineru.net)
+            3. 启动应用，输入文章链接和 API Token
+            4. 点击"开始转换"
+
+            ## 系统要求
+
+            - Windows 10+
+            - macOS 10.15+
+            - Linux (Ubuntu 20.04+)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

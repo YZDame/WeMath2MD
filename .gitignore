@@ -37,3 +37,9 @@ _temp_*/
 # Flask
 instance/
 .webassets-cache
+
+# 桌面应用构建产物
+desktop-app/dist/
+desktop-app/python/
+desktop-app/node_modules/
+desktop-app/*.log
