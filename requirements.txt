@@ -5,6 +5,7 @@ flask>=3.0.0
 flask-cors>=4.0.0
 tenacity>=8.2.0
 tqdm>=4.65.0
+gunicorn>=21.0.0
 pytest>=7.4.0
 pytest-mock>=3.11.0
 pytest-cov>=4.1.0

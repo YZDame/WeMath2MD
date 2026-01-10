@@ -279,6 +279,9 @@ if __name__ == '__main__':
     setup_logger(level=log_cfg.level, log_file="web_app.log")
 
     logger.info("WeMath2MD Web 服务启动中...")
-    logger.info(f"访问 http://localhost:{cfg.port}")
 
-    app.run(debug=cfg.debug, host=cfg.host, port=cfg.port)
+    # Heroku 会设置 PORT 环境变量
+    port = int(os.environ.get('PORT', cfg.port))
+    logger.info(f"访问 http://{cfg.host}:{port}")
+
+    app.run(debug=cfg.debug, host=cfg.host, port=port)
