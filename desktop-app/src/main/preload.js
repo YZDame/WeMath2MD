@@ -55,6 +55,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 监听 Python 后端状态
   onPythonStatus: (callback) => {
-    ipcRenderer.on('python-status', (event, data) => callback(data));
+    const listener = (event, data) => callback(data);
+    ipcRenderer.on('python-status', listener);
+    // 返回清理函数，允许取消订阅
+    return () => ipcRenderer.removeListener('python-status', listener);
   }
 });

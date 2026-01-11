@@ -20,8 +20,8 @@
   "author": "yzdame",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^27.3.11",
-    "electron-builder": "^24.9.1"
+    "electron": "^39.2.7",
+    "electron-builder": "^26.4.0"
   },
   "build": {
     "appId": "com.wemath2md.app",
@@ -30,7 +30,6 @@
       "output": "dist",
       "buildResources": "assets"
     },
-    "afterSign": "afterSign.js",
     "files": [
       "src/**/*",
       "python/**/*",
@@ -46,10 +45,7 @@
       "target": [
         "dmg"
       ],
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "assets/entitlements.plist",
-      "entitlementsInherit": "assets/entitlements.plist",
+      "sign": null,
       "extraResources": [
         {
           "from": "python",

@@ -90,13 +90,47 @@ EOF
 
 echo "Python 文件准备完成"
 
-# 构建 macOS 应用
+# 构建 macOS 应用（使用 --dir 跳过 DMG 创建和签名）
 echo ""
 echo "正在构建 macOS 应用..."
-npm run build:mac
+npx electron-builder --mac --dir || {
+  echo "注意: electron-builder 构建可能因签名失败，但应用已创建"
+}
+
+# 使用 ditto 复制应用以移除所有元数据（macOS 26 兼容性）
+echo ""
+echo "使用 ditto 移除元数据..."
+APP_PATH="dist/mac-arm64/WeMath2MD.app"
+CLEAN_PATH="dist/clean/WeMath2MD.app"
+
+if [ -d "$APP_PATH" ]; then
+  rm -rf dist/clean
+  mkdir -p dist/clean
+
+  # 使用 ditto 复制时不包含资源分支和扩展属性
+  ditto --norsrc --noextattr --noqtn "$APP_PATH" "$CLEAN_PATH"
+
+  # 手动签名清理后的应用
+  echo "手动签名应用..."
+  codesign --force --deep --sign - "$CLEAN_PATH"
+
+  # 验证签名
+  echo ""
+  echo "验证签名..."
+  codesign -vvv "$CLEAN_PATH" | head -5
+
+  # 替换原应用
+  rm -rf "$APP_PATH"
+  mv "$CLEAN_PATH" "$APP_PATH"
+
+  echo "签名完成: $APP_PATH"
+else
+  echo "错误: 应用未找到: $APP_PATH"
+  exit 1
+fi
 
 echo ""
 echo "========================================"
 echo "构建完成！"
-echo "应用位置: dist/"
+echo "应用位置: $APP_PATH"
 echo "========================================"
