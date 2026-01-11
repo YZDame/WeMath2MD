@@ -55,15 +55,10 @@ function startPythonServer() {
     let scriptPath;
 
     if (app.isPackaged) {
-      // 生产环境：使用打包的Python环境
-      const platform = process.platform;
-      if (platform === 'win32') {
-        pythonPath = path.join(process.resourcesPath, 'python', 'python.exe');
-      } else if (platform === 'darwin') {
-        pythonPath = path.join(process.resourcesPath, 'python', 'bin', 'python3');
-      } else {
-        pythonPath = path.join(process.resourcesPath, 'python', 'bin', 'python3');
-      }
+      // 生产环境：使用系统Python（不捆绑Python解释器）
+      // 按优先级尝试：python3、python、python3.11、python3.12
+      const pythonCandidates = ['python3', 'python', 'python3.12', 'python3.11'];
+      pythonPath = 'python3';  // 默认使用 python3
       scriptPath = path.join(process.resourcesPath, 'python', 'desktop_backend.py');
     } else {
       // 开发环境：使用系统Python和父目录的脚本

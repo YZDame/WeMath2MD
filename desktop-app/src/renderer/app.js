@@ -4,31 +4,40 @@ const state = {
   currentTaskId: null,
   pollInterval: null,
   outputDir: '',
+  currentResult: null,
+  currentMarkdown: '',
+  viewMode: 'rendered',
   history: []
 };
 
 // DOM 元素
 const elements = {
   form: document.getElementById('convertForm'),
-  urlInput: document.getElementById('url'),
+  urlInput: document.getElementById('urlInput'),
   apiTokenInput: document.getElementById('apiToken'),
   outputDirInput: document.getElementById('outputDir'),
   selectDirBtn: document.getElementById('selectDirBtn'),
-  convertBtn: document.getElementById('convertBtn'),
-  btnText: document.querySelector('.btn-text'),
+  convertBtn: document.getElementById('submitBtn'),
+  status: document.getElementById('status'),
+  statusIcon: document.getElementById('statusIcon'),
+  statusText: document.getElementById('statusText'),
   progressContainer: document.getElementById('progressContainer'),
   progressFill: document.getElementById('progressFill'),
   progressStatus: document.getElementById('progressStatus'),
   progressPercent: document.getElementById('progressPercent'),
-  resultContainer: document.getElementById('resultContainer'),
+  resultCard: document.getElementById('resultCard'),
   resultTitle: document.getElementById('resultTitle'),
-  resultPath: document.getElementById('resultPath'),
+  resultInfo: document.getElementById('resultInfo'),
+  previewBtn: document.getElementById('previewBtn'),
   openFolderBtn: document.getElementById('openFolderBtn'),
-  historyCard: document.getElementById('historyCard'),
+  historySection: document.getElementById('historySection'),
   historyList: document.getElementById('historyList'),
+  modalOverlay: document.getElementById('modalOverlay'),
+  markdownContent: document.getElementById('markdownContent'),
+  sourceIcon: document.getElementById('sourceIcon'),
+  renderedIcon: document.getElementById('renderedIcon'),
   toast: document.getElementById('toast'),
-  appVersion: document.getElementById('appVersion'),
-  githubLink: document.getElementById('githubLink')
+  appVersion: document.getElementById('appVersion')
 };
 
 // 初始化
@@ -49,9 +58,15 @@ function bindEvents() {
   elements.form.addEventListener('submit', handleSubmit);
   elements.selectDirBtn.addEventListener('click', handleSelectDir);
   elements.openFolderBtn.addEventListener('click', handleOpenFolder);
+  elements.previewBtn.addEventListener('click', handlePreview);
 
   // 输入框变化时保存设置
   elements.apiTokenInput.addEventListener('change', saveSettings);
+
+  // ESC 关闭弹窗
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
 }
 
 // 加载设置
@@ -99,24 +114,23 @@ function addToHistory(item) {
 // 渲染历史记录
 function renderHistory() {
   if (state.history.length === 0) {
-    elements.historyCard.style.display = 'none';
+    elements.historySection.style.display = 'none';
     return;
   }
 
-  elements.historyCard.style.display = 'block';
-  elements.historyList.innerHTML = state.history.map(item => `
-    <div class="history-item" data-url="${item.url}">
-      <div class="history-item-title">${escapeHtml(item.title)}</div>
-      <div class="history-item-time">${formatTime(item.time)}</div>
+  elements.historySection.style.display = 'block';
+  elements.historyList.innerHTML = state.history.map((item, index) => `
+    <div class="history-item">
+      <div class="history-info">
+        <div class="history-title">${escapeHtml(item.title)}</div>
+        <div class="history-meta">${formatTime(item.time)}</div>
+      </div>
+      <div class="history-actions">
+        <button class="btn btn-small btn-outline" onclick="previewHistory(${index})">预览</button>
+        <button class="btn btn-small btn-outline" onclick="openHistoryFolder(${index})">打开</button>
+      </div>
     </div>
   `).join('');
-
-  // 点击历史记录填充URL
-  document.querySelectorAll('.history-item').forEach(el => {
-    el.addEventListener('click', () => {
-      elements.urlInput.value = el.dataset.url;
-    });
-  });
 }
 
 // 提交表单
@@ -152,7 +166,8 @@ async function handleSubmit(e) {
 // 开始转换
 async function startConversion(url, apiToken) {
   state.isConverting = true;
-  updateConvertButton(true);
+  elements.convertBtn.disabled = true;
+  showStatus('loading', '任务已提交，正在处理...');
   showProgress();
   updateProgress(10, '正在下载图片...');
 
@@ -174,6 +189,7 @@ async function startConversion(url, apiToken) {
 
   } catch (error) {
     console.error('转换失败:', error);
+    showStatus('error', error.message || '网络错误');
     showToast(error.message || '转换失败，请检查网络连接', 'error');
     resetState();
   }
@@ -209,6 +225,7 @@ function startPolling() {
 
     } catch (error) {
       stopPolling();
+      showStatus('error', error.message || '转换失败');
       showToast(error.message || '转换失败', 'error');
       resetState();
     }
@@ -225,25 +242,27 @@ function stopPolling() {
 
 // 转换成功
 function handleSuccess(result) {
+  state.currentResult = result;
   state.isConverting = false;
-  updateConvertButton(false);
+  elements.convertBtn.disabled = false;
   hideProgress();
 
   // 显示结果
   elements.resultTitle.textContent = result.title;
-  elements.resultPath.textContent = result.result_dir;
-  elements.resultContainer.classList.add('active');
+  elements.resultInfo.textContent = `识别了 ${result.image_count} 张图片`;
+  elements.resultCard.classList.add('show');
+
+  showStatus('success', '转换完成');
 
   // 添加到历史
   addToHistory({
     title: result.title,
     url: elements.urlInput.value,
     time: Date.now(),
-    resultDir: result.result_dir
+    resultDir: result.result_dir,
+    mdFile: result.md_file,
+    imageCount: result.image_count
   });
-
-  // 保存当前结果目录
-  state.currentResultDir = result.result_dir;
 
   showToast('转换完成！', 'success');
 }
@@ -251,9 +270,10 @@ function handleSuccess(result) {
 // 重置状态
 function resetState() {
   state.isConverting = false;
-  updateConvertButton(false);
+  elements.convertBtn.disabled = false;
   hideProgress();
-  elements.resultContainer.classList.remove('active');
+  elements.resultCard.classList.remove('show');
+  hideStatus();
 }
 
 // 选择输出目录
@@ -268,25 +288,126 @@ async function handleSelectDir() {
 
 // 打开输出文件夹
 async function handleOpenFolder() {
-  if (state.currentResultDir) {
-    await window.electronAPI.openOutputFolder(state.currentResultDir);
+  if (state.currentResult && state.currentResult.result_dir) {
+    await window.electronAPI.openOutputFolder(state.currentResult.result_dir);
   }
 }
 
-// 更新转换按钮
-function updateConvertButton(isConverting) {
-  elements.convertBtn.disabled = isConverting;
-  if (isConverting) {
-    elements.btnText.innerHTML = '<div class="spinner"></div>';
-  } else {
-    elements.btnText.textContent = '开始转换';
+// 打开历史记录文件夹
+async function openHistoryFolder(index) {
+  const item = state.history[index];
+  if (item && item.resultDir) {
+    await window.electronAPI.openOutputFolder(item.resultDir);
   }
+}
+
+// 预览当前结果
+async function handlePreview() {
+  if (!state.currentResult || !state.currentResult.md_file) return;
+
+  // Reset to rendered view when opening new preview
+  setViewMode('rendered');
+
+  elements.modalOverlay.classList.add('show');
+  elements.markdownContent.textContent = '加载中...';
+
+  try {
+    const response = await window.electronAPI.apiRequest(`/preview/${encodeURIComponent(state.currentResult.md_file)}`);
+
+    if (response.success) {
+      state.currentMarkdown = response.content;
+      updateMarkdownContent();
+    } else {
+      elements.markdownContent.textContent = '加载失败: ' + (response.error || '未知错误');
+    }
+  } catch (error) {
+    elements.markdownContent.textContent = '网络错误';
+  }
+}
+
+// 预览历史记录
+async function previewHistory(index) {
+  const item = state.history[index];
+  if (!item || !item.mdFile) return;
+
+  state.currentResult = {
+    md_file: item.mdFile,
+    title: item.title
+  };
+
+  await handlePreview();
+}
+
+// 设置视图模式
+window.setViewMode = function(mode) {
+  state.viewMode = mode;
+
+  if (mode === 'source') {
+    elements.sourceIcon.classList.add('active');
+    elements.renderedIcon.classList.remove('active');
+    elements.markdownContent.classList.remove('rendered-view');
+    elements.markdownContent.classList.add('source-view');
+  } else {
+    elements.renderedIcon.classList.add('active');
+    elements.sourceIcon.classList.remove('active');
+    elements.markdownContent.classList.remove('source-view');
+    elements.markdownContent.classList.add('rendered-view');
+  }
+
+  updateMarkdownContent();
+};
+
+// 更新 Markdown 内容
+function updateMarkdownContent() {
+  if (state.viewMode === 'source') {
+    elements.markdownContent.textContent = state.currentMarkdown;
+  } else {
+    // Render markdown using marked.js
+    elements.markdownContent.innerHTML = marked.parse(state.currentMarkdown);
+
+    // Render math formulas using KaTeX
+    renderMathInElement(elements.markdownContent, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ],
+      throwOnError: false,
+      trust: true
+    });
+  }
+}
+
+// 关闭弹窗
+window.closeModal = function(event) {
+  if (event && event.target !== event.currentTarget) return;
+  elements.modalOverlay.classList.remove('show');
+};
+
+// 显示状态
+function showStatus(type, message) {
+  elements.status.className = 'status ' + type;
+  elements.statusText.textContent = message;
+
+  if (type === 'loading') {
+    elements.statusIcon.innerHTML = '<div class="spinner"></div>';
+  } else if (type === 'success') {
+    elements.statusIcon.textContent = '✓';
+  } else if (type === 'error') {
+    elements.statusIcon.textContent = '✕';
+  }
+}
+
+// 隐藏状态
+function hideStatus() {
+  elements.status.className = 'status';
 }
 
 // 显示进度
 function showProgress() {
   elements.progressContainer.classList.add('active');
-  elements.resultContainer.classList.remove('active');
+  elements.resultCard.classList.remove('show');
 }
 
 // 隐藏进度

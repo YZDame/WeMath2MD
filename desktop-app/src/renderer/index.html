@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WeMath2MD - 微信公众号数学文章转 Markdown</title>
+  <title>WeMath2MD - 公众号文章转 Markdown</title>
+  <!-- KaTeX for math formula rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <!-- Marked.js for markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -11,162 +17,242 @@
       box-sizing: border-box;
     }
 
-    :root {
-      --primary-color: #2563eb;
-      --primary-hover: #1d4ed8;
-      --success-color: #10b981;
-      --warning-color: #f59e0b;
-      --error-color: #ef4444;
-      --bg-color: #f8fafc;
-      --card-bg: #ffffff;
-      --text-primary: #1e293b;
-      --text-secondary: #64748b;
-      --border-color: #e2e8f0;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: var(--bg-color);
-      color: var(--text-primary);
-      line-height: 1.6;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #ffffff;
+      color: #000000;
       min-height: 100vh;
-      padding: 20px;
+      padding: 40px 20px;
     }
 
     .container {
       max-width: 600px;
       margin: 0 auto;
+      position: relative;
     }
 
+    /* GitHub Icon */
+    .github-link {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      text-decoration: none;
+      border-radius: 12px;
+      border: 1px solid #e5e5e5;
+    }
+
+    .github-link:hover {
+      background: #000000;
+      transform: scale(1.1);
+    }
+
+    .github-link:hover svg {
+      fill: #ffffff;
+    }
+
+    .github-link svg {
+      width: 22px;
+      height: 22px;
+      fill: #000000;
+      transition: fill 0.3s;
+    }
+
+    /* Header */
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 40px;
+      padding-bottom: 24px;
     }
 
     .header h1 {
-      font-size: 28px;
+      font-size: 36px;
       font-weight: 700;
-      color: var(--primary-color);
+      letter-spacing: 1px;
       margin-bottom: 8px;
     }
 
     .header p {
-      color: var(--text-secondary);
       font-size: 14px;
+      color: #666666;
     }
 
+    /* Card */
     .card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: var(--shadow);
-      margin-bottom: 20px;
-      border: 1px solid var(--border-color);
-    }
-
-    .form-group {
+      background: #ffffff;
+      padding: 28px 32px;
       margin-bottom: 20px;
     }
 
-    .form-group label {
-      display: block;
+    .card-title {
+      font-size: 12px;
       font-weight: 600;
-      font-size: 14px;
-      color: var(--text-primary);
-      margin-bottom: 8px;
+      margin-bottom: 20px;
+      color: #666666;
+      letter-spacing: 0.5px;
+      font-family: system-ui, -apple-system, sans-serif;
     }
 
-    .form-group label .required {
-      color: var(--error-color);
-      margin-left: 2px;
-    }
-
-    input[type="text"],
-    input[type="password"],
-    textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      font-size: 14px;
-      transition: all 0.2s;
-      background: var(--bg-color);
-    }
-
-    input:focus,
-    textarea:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-      background: var(--card-bg);
-    }
-
+    /* Input Group */
     .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .input-row {
       display: flex;
       gap: 10px;
     }
 
-    .input-group input {
-      flex: 1;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: none;
-      gap: 8px;
-    }
-
-    .btn-primary {
-      background: var(--primary-color);
-      color: white;
+    input[type="text"],
+    input[type="password"] {
       width: 100%;
+      padding: 14px 18px;
+      font-size: 15px;
+      border: 1px solid #000000;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #000000;
+      outline: none;
+      transition: background 0.15s;
     }
 
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-lg);
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      background: #f5f5f5;
     }
 
-    .btn-primary:active {
-      transform: translateY(0);
+    input[type="text"]::placeholder,
+    input[type="password"]::placeholder {
+      color: #999999;
     }
 
-    .btn-secondary {
-      background: var(--bg-color);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
+    input[type="text"][readonly] {
+      cursor: default;
     }
 
-    .btn-secondary:hover {
-      background: var(--border-color);
+    .input-hint {
+      font-size: 12px;
+      color: #666666;
+      margin-top: -8px;
+      margin-bottom: 4px;
     }
 
-    .btn-small {
-      padding: 8px 14px;
-      font-size: 13px;
+    /* Buttons */
+    .btn {
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #000000;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .btn:hover {
+      background: #000000;
+      color: #ffffff;
+      transform: scale(1.05);
     }
 
     .btn:disabled {
-      opacity: 0.6;
+      opacity: 0.4;
       cursor: not-allowed;
-      transform: none !important;
+      background: #ffffff;
+      color: #000000;
+      transform: none;
     }
 
-    .progress-container {
+    .btn-outline {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+    }
+
+    .btn-primary:hover {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Status */
+    .status {
+      margin-top: 18px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      background: #f5f5f5;
       display: none;
-      margin-top: 20px;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .status.loading {
+      display: flex;
+    }
+
+    .status.success {
+      display: flex;
+    }
+
+    .status.error {
+      display: flex;
+      background: #f5f5f5;
+    }
+
+    .status-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid #000000;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-top: 18px;
+      display: none;
     }
 
     .progress-container.active {
@@ -175,7 +261,7 @@
 
     .progress-bar {
       height: 8px;
-      background: var(--border-color);
+      background: #e5e5e5;
       border-radius: 4px;
       overflow: hidden;
       margin-bottom: 10px;
@@ -183,7 +269,7 @@
 
     .progress-fill {
       height: 100%;
-      background: var(--primary-color);
+      background: #000000;
       border-radius: 4px;
       transition: width 0.3s ease;
       width: 0%;
@@ -193,269 +279,531 @@
       display: flex;
       justify-content: space-between;
       font-size: 13px;
-      color: var(--text-secondary);
+      color: #666666;
     }
 
-    .result-container {
+    /* Result Card */
+    .result-card {
       display: none;
-      margin-top: 20px;
     }
 
-    .result-container.active {
+    .result-card.show {
       display: block;
     }
 
-    .result-item {
-      background: var(--bg-color);
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .result-header {
+      padding-bottom: 16px;
+      margin-bottom: 20px;
     }
 
-    .result-item-info {
-      flex: 1;
-    }
-
-    .result-item-title {
+    .result-title {
+      font-size: 18px;
       font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
-    .result-item-path {
-      font-size: 12px;
-      color: var(--text-secondary);
-      word-break: break-all;
+    .result-info {
+      font-size: 14px;
+      color: #666666;
     }
 
     .result-actions {
       display: flex;
-      gap: 8px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
-    .history {
-      margin-top: 20px;
+    /* History */
+    .history-section {
+      margin-top: 32px;
+      padding-top: 24px;
     }
 
-    .history-title {
-      font-size: 16px;
+    .history-header {
+      font-size: 12px;
       font-weight: 600;
-      margin-bottom: 12px;
-      color: var(--text-primary);
+      margin-bottom: 16px;
+      color: #666666;
+      letter-spacing: 1px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     .history-item {
-      background: var(--bg-color);
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      background: #f5f5f5;
+      transition: background 0.15s;
       cursor: pointer;
-      transition: all 0.2s;
     }
 
     .history-item:hover {
-      background: var(--border-color);
+      background: #e5e5e5;
     }
 
-    .history-item-title {
-      font-weight: 600;
-      font-size: 14px;
+    .history-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .history-title {
+      font-size: 15px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       margin-bottom: 4px;
     }
 
-    .history-item-time {
+    .history-meta {
       font-size: 12px;
-      color: var(--text-secondary);
+      color: #666666;
     }
 
-    .toast {
+    .history-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Modal */
+    .modal-overlay {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 14px 20px;
-      border-radius: 8px;
-      color: white;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: var(--shadow-lg);
-      transform: translateX(400px);
-      transition: transform 0.3s ease;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
       z-index: 1000;
+      padding: 20px;
     }
 
-    .toast.show {
-      transform: translateX(0);
+    .modal-overlay.show {
+      display: flex;
     }
 
-    .toast.success {
-      background: var(--success-color);
+    .modal {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 800px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #e5e5e5;
     }
 
-    .toast.error {
-      background: var(--error-color);
-    }
-
-    .toast.info {
-      background: var(--primary-color);
-    }
-
-    .settings-toggle {
+    .modal-header {
+      padding: 18px 24px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--text-secondary);
+      justify-content: space-between;
     }
 
-    .toggle-switch {
-      position: relative;
-      width: 44px;
-      height: 24px;
-      background: var(--border-color);
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background 0.2s;
+    .modal-header h3 {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #666666;
+      margin: 0;
     }
 
-    .toggle-switch.active {
-      background: var(--primary-color);
+    .modal-header-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
 
-    .toggle-switch::after {
-      content: '';
-      position: absolute;
+    /* View Toggle Switch */
+    .view-toggle {
+      display: flex;
+      align-items: center;
+    }
+
+    .view-toggle-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 7px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .view-toggle-icon {
       width: 20px;
       height: 20px;
-      background: white;
-      border-radius: 50%;
-      top: 2px;
-      left: 2px;
-      transition: transform 0.2s;
-      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 5px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0.4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .toggle-switch.active::after {
-      transform: translateX(20px);
+    .view-toggle-icon:hover {
+      opacity: 0.7;
     }
 
-    .empty-state {
-      text-align: center;
-      padding: 30px;
-      color: var(--text-secondary);
+    .view-toggle-icon.active {
+      opacity: 1;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
-    .empty-state svg {
-      width: 48px;
-      height: 48px;
-      margin-bottom: 12px;
-      opacity: 0.5;
+    .view-toggle-icon svg {
+      width: 100%;
+      height: 100%;
+      stroke: #000000;
+      stroke-width: 1.5;
+      fill: none;
+      display: block;
     }
 
-    .footer {
-      text-align: center;
-      margin-top: 30px;
-      color: var(--text-secondary);
-      font-size: 12px;
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #ffffff;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: all 0.15s;
+      color: #000000;
+      border: 1px solid #000000;
     }
 
-    .footer a {
-      color: var(--primary-color);
-      text-decoration: none;
+    .modal-close:hover {
+      background: #000000;
+      color: #ffffff;
+      transform: scale(1.1);
     }
 
-    .status-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 12px;
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .markdown-content {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      word-break: break-word;
+    }
+
+    /* Source code view */
+    .markdown-content.source-view {
+      white-space: pre-wrap;
+    }
+
+    /* Rendered Markdown view */
+    .markdown-content.rendered-view {
+      white-space: normal;
+    }
+
+    .markdown-content.rendered-view h1,
+    .markdown-content.rendered-view h2,
+    .markdown-content.rendered-view h3,
+    .markdown-content.rendered-view h4,
+    .markdown-content.rendered-view h5,
+    .markdown-content.rendered-view h6 {
+      margin-top: 24px;
+      margin-bottom: 16px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .markdown-content.rendered-view h1 {
+      font-size: 2em;
+      border-bottom: 1px solid #e5e5e5;
+      padding-bottom: 0.3em;
+    }
+
+    .markdown-content.rendered-view h2 {
+      font-size: 1.5em;
+      border-bottom: 1px solid #e5e5e5;
+      padding-bottom: 0.3em;
+    }
+
+    .markdown-content.rendered-view h3 {
+      font-size: 1.25em;
+    }
+
+    .markdown-content.rendered-view p {
+      margin-bottom: 16px;
+    }
+
+    .markdown-content.rendered-view a {
+      color: #000000;
+      text-decoration: underline;
+    }
+
+    .markdown-content.rendered-view strong {
       font-weight: 600;
     }
 
-    .status-badge.processing {
-      background: #dbeafe;
-      color: #1e40af;
+    .markdown-content.rendered-view em {
+      font-style: italic;
     }
 
-    .status-badge.done {
-      background: #d1fae5;
-      color: #065f46;
+    .markdown-content.rendered-view code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 0.9em;
     }
 
-    .status-badge.failed {
-      background: #fee2e2;
-      color: #991b1b;
+    .markdown-content.rendered-view pre {
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-bottom: 16px;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .markdown-content.rendered-view pre code {
+      background: none;
+      padding: 0;
+      font-size: 14px;
     }
 
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid transparent;
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .markdown-content.rendered-view blockquote {
+      border-left: 4px solid #e5e5e5;
+      padding-left: 16px;
+      margin: 16px 0;
+      color: #666666;
+    }
+
+    .markdown-content.rendered-view ul,
+    .markdown-content.rendered-view ol {
+      padding-left: 24px;
+      margin-bottom: 16px;
+    }
+
+    .markdown-content.rendered-view li {
+      margin-bottom: 4px;
+    }
+
+    .markdown-content.rendered-view img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+
+    .markdown-content.rendered-view table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .markdown-content.rendered-view table th,
+    .markdown-content.rendered-view table td {
+      border: 1px solid #e5e5e5;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    .markdown-content.rendered-view table th {
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+
+    .markdown-content.rendered-view hr {
+      border: none;
+      border-top: 1px solid #e5e5e5;
+      margin: 24px 0;
+    }
+
+    /* KaTeX Math Styles */
+    .markdown-content.rendered-view .katex {
+      font-size: 1.1em;
+    }
+
+    .markdown-content.rendered-view .katex-display {
+      margin: 24px 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .markdown-content.rendered-view .katex-display > .katex {
+      text-align: left;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      font-size: 13px;
+      color: #666666;
+    }
+
+    .footer a {
+      color: #000000;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #000000;
+      color: #ffffff;
+      padding: 14px 24px;
+      border-radius: 10px;
+      display: none;
+      z-index: 2000;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .toast.show {
+      display: block;
+      animation: slideDown 0.2s;
+    }
+
+    .toast.error {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateX(-50%) translateY(-10px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      body {
+        padding: 24px 16px;
+      }
+
+      .github-link {
+        top: 16px;
+        right: 16px;
+        width: 40px;
+        height: 40px;
+      }
+
+      .header h1 {
+        font-size: 28px;
+      }
+
+      .card {
+        padding: 20px 20px;
+      }
+
+      .result-actions {
+        flex-direction: column;
+      }
+
+      .history-item {
+        flex-wrap: wrap;
+        padding: 14px 16px;
+      }
+
+      .history-actions {
+        width: 100%;
+        margin-top: 10px;
+        justify-content: flex-end;
+      }
+
+      .toast {
+        left: 16px;
+        right: 16px;
+        transform: none;
+        width: auto;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- GitHub Link -->
+  <a href="https://github.com/YZDame/WeMath2MD" target="_blank" class="github-link" aria-label="View on GitHub">
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+    </svg>
+  </a>
+
   <div class="container">
-    <div class="header">
-      <h1>📐 WeMath2MD</h1>
-      <p>微信公众号数学文章 → Markdown 转换工具</p>
+    <!-- Header -->
+    <header class="header">
+      <h1>WeMath2MD</h1>
+      <p>微信公众号数学文章转换为 Markdown</p>
+    </header>
+
+    <!-- API Token Card -->
+    <div class="card">
+      <div class="card-title">MinerU API Token</div>
+      <div class="input-group">
+        <input type="password" id="apiToken"
+               placeholder="输入你的 MinerU API Token"
+               autocomplete="off">
+        <div class="input-hint">必填项</div>
+      </div>
     </div>
 
-    <!-- 主转换卡片 -->
+    <!-- Output Directory Card -->
     <div class="card">
+      <div class="card-title">输出目录（可选）</div>
+      <div class="input-row">
+        <input type="text" id="outputDir" placeholder="默认在项目目录下的 output 文件夹" readonly>
+        <button type="button" class="btn btn-outline btn-small" id="selectDirBtn">选择目录</button>
+      </div>
+    </div>
+
+    <!-- URL Input Card -->
+    <div class="card">
+      <div class="card-title">文章链接</div>
       <form id="convertForm">
-        <div class="form-group">
-          <label for="url">
-            文章链接
-            <span class="required">*</span>
-          </label>
-          <input
-            type="text"
-            id="url"
-            placeholder="https://mp.weixin.qq.com/s/xxxxx"
-            required
-            autocomplete="off"
-          >
+        <div class="input-group">
+          <input type="text" id="urlInput"
+                 placeholder="粘贴微信公众号文章链接..."
+                 autocomplete="off">
+          <button type="submit" class="btn btn-primary" id="submitBtn">开始转换</button>
         </div>
-
-        <div class="form-group">
-          <label for="apiToken">
-            MinerU API Token
-            <span class="required">*</span>
-          </label>
-          <input
-            type="password"
-            id="apiToken"
-            placeholder="输入你的 MinerU API Token"
-            required
-          >
-        </div>
-
-        <div class="form-group">
-          <label>输出目录</label>
-          <div class="input-group">
-            <input type="text" id="outputDir" placeholder="默认在项目目录下的 output 文件夹" readonly>
-            <button type="button" class="btn btn-secondary btn-small" id="selectDirBtn">
-              选择目录
-            </button>
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary" id="convertBtn">
-          <span class="btn-text">开始转换</span>
-        </button>
       </form>
 
-      <!-- 进度条 -->
+      <!-- Status -->
+      <div class="status" id="status">
+        <div class="status-icon" id="statusIcon"></div>
+        <span id="statusText">准备就绪</span>
+      </div>
+
+      <!-- Progress Bar -->
       <div class="progress-container" id="progressContainer">
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
@@ -465,34 +813,66 @@
           <span id="progressPercent">0%</span>
         </div>
       </div>
+    </div>
 
-      <!-- 结果显示 -->
-      <div class="result-container" id="resultContainer">
-        <div class="result-item">
-          <div class="result-item-info">
-            <div class="result-item-title" id="resultTitle">转换完成</div>
-            <div class="result-item-path" id="resultPath">output/article/</div>
-          </div>
-          <div class="result-actions">
-            <button class="btn btn-secondary btn-small" id="openFolderBtn">打开文件夹</button>
-          </div>
-        </div>
+    <!-- Result Card -->
+    <div class="card result-card" id="resultCard">
+      <div class="result-header">
+        <div class="result-title" id="resultTitle">转换完成</div>
+        <div class="result-info" id="resultInfo">识别了 0 张图片</div>
+      </div>
+      <div class="result-actions">
+        <button class="btn btn-outline" id="previewBtn">预览 Markdown</button>
+        <button class="btn btn-outline" id="openFolderBtn">打开文件夹</button>
       </div>
     </div>
 
-    <!-- 历史记录 -->
-    <div class="card history" id="historyCard" style="display: none;">
-      <div class="history-title">最近转换</div>
-      <div id="historyList"></div>
+    <!-- History Section -->
+    <div class="history-section" id="historySection" style="display: none;">
+      <div class="history-header">转换历史</div>
+      <div class="history-list" id="historyList">
+        <!-- History items will be added here -->
+      </div>
     </div>
 
-    <!-- 页脚 -->
-    <div class="footer">
-      <p>WeMath2MD v<span id="appVersion">1.0.0</span> | <a href="#" id="githubLink">GitHub</a></p>
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Powered by <a href="https://mineru.net" target="_blank">MinerU</a> | WeMath2MD v<span id="appVersion">1.0.0</span></p>
+    </footer>
+  </div>
+
+  <!-- Preview Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Markdown 预览</h3>
+        <div class="modal-header-controls">
+          <div class="view-toggle">
+            <div class="view-toggle-icons">
+              <div class="view-toggle-icon" id="sourceIcon" onclick="setViewMode('source')" title="源代码">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+              </div>
+              <div class="view-toggle-icon active" id="renderedIcon" onclick="setViewMode('rendered')" title="渲染效果">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="markdown-content rendered-view" id="markdownContent">加载中...</div>
+      </div>
     </div>
   </div>
 
-  <!-- Toast 提示 -->
+  <!-- Toast Notification -->
   <div class="toast" id="toast"></div>
 
   <script src="app.js"></script>
