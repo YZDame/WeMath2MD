@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
-const https = require('https');
+const http = require('http');
 
 let mainWindow;
 let pythonProcess = null;
@@ -98,7 +98,7 @@ function startPythonServer() {
     const checkHealth = () => {
       attempts++;
 
-      https.get('http://127.0.0.1:54321/health', (res) => {
+      http.get('http://127.0.0.1:54321/health', (res) => {
         if (res.statusCode === 200) {
           clearInterval(healthCheckInterval);
           console.log('Python 后端健康检查通过');
