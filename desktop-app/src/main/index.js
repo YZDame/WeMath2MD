@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const https = require('https');
 
 let mainWindow;
 let pythonProcess = null;
@@ -90,30 +91,75 @@ function startPythonServer() {
       pythonProcess = null;
     });
 
-    // 等待服务器启动
-    setTimeout(() => {
-      resolve();
-    }, 2000);
+    // 轮询健康检查，等待服务器真正启动
+    const maxAttempts = 30; // 最多等待 30 秒
+    let attempts = 0;
+
+    const checkHealth = () => {
+      attempts++;
+
+      https.get('http://127.0.0.1:54321/health', (res) => {
+        if (res.statusCode === 200) {
+          clearInterval(healthCheckInterval);
+          console.log('Python 后端健康检查通过');
+          resolve();
+        } else {
+          if (attempts >= maxAttempts) {
+            cleanupAndReject();
+          }
+        }
+      }).on('error', () => {
+        if (attempts >= maxAttempts) {
+          cleanupAndReject();
+        }
+      });
+    };
+
+    const cleanupAndReject = () => {
+      clearInterval(healthCheckInterval);
+      if (pythonProcess) {
+        pythonProcess.kill();
+        pythonProcess = null;
+      }
+      reject(new Error('Python 后端启动超时，请检查系统是否安装了 Python 3 和必要的依赖包'));
+    };
+
+    const healthCheckInterval = setInterval(checkHealth, 1000);
   });
 }
 
-// 打开外部链接
-app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', (event, navigationUrl) => {
-    event.preventDefault();
-    shell.openExternal(navigationUrl);
-  });
-});
-
 // 应用就绪后创建窗口
 app.whenReady().then(async () => {
+  // 设置外部链接处理
+  app.on('web-contents-created', (event, contents) => {
+    contents.setWindowOpenHandler(({ url }) => {
+      shell.openExternal(url);
+      return { action: 'deny' };
+    });
+  });
   await createWindow();
+
+  // 通知渲染进程：正在启动 Python 后端
+  if (mainWindow) {
+    mainWindow.webContents.send('python-status', { status: 'starting' });
+  }
+
   try {
     await startPythonServer();
     console.log('Python后端已启动');
+    // 通知渲染进程：Python 后端启动成功
+    if (mainWindow) {
+      mainWindow.webContents.send('python-status', { status: 'ready' });
+    }
   } catch (error) {
     console.error('启动Python后端失败:', error);
-    // 即使Python启动失败，也允许应用运行
+    // 通知渲染进程：Python 后端启动失败
+    if (mainWindow) {
+      mainWindow.webContents.send('python-status', {
+        status: 'failed',
+        error: error.message
+      });
+    }
   }
 });
 

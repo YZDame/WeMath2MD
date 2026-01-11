@@ -51,6 +51,49 @@ async function init() {
 
   // 绑定事件
   bindEvents();
+
+  // 监听 Python 后端状态
+  window.electronAPI.onPythonStatus((data) => {
+    handlePythonStatus(data);
+  });
+}
+
+// 处理 Python 后端状态
+function handlePythonStatus(data) {
+  if (data.status === 'starting') {
+    // Python 正在启动
+    elements.convertBtn.disabled = true;
+    elements.convertBtn.textContent = '正在启动后端...';
+    showStatus('loading', '正在启动 Python 后端...');
+  } else if (data.status === 'ready') {
+    // Python 启动成功
+    elements.convertBtn.disabled = false;
+    elements.convertBtn.textContent = '开始转换';
+    hideStatus();
+  } else if (data.status === 'failed') {
+    // Python 启动失败
+    elements.convertBtn.disabled = true;
+    elements.convertBtn.textContent = '后端启动失败';
+    showStatus('error', 'Python 后端启动失败');
+
+    // 显示详细错误信息
+    const errorMsg = data.error || '未知错误';
+    showToast(`Python 后端启动失败: ${errorMsg}`, 'error');
+
+    // 如果是缺少依赖，显示安装说明
+    if (errorMsg.includes('Python') || errorMsg.includes('依赖')) {
+      setTimeout(() => {
+        alert(
+          'WeMath2MD 需要 Python 3 和必要的依赖包。\n\n' +
+          '请确保系统已安装 Python 3，然后在终端运行：\n\n' +
+          'pip3 install -r requirements.txt\n\n' +
+          '或者安装单个包：\n' +
+          'pip3 install flask flask-cors requests beautifulsoup4 python-dotenv tenacity tqdm openai\n\n' +
+          '安装完成后重新启动应用。'
+        );
+      }, 1000);
+    }
+  }
 }
 
 // 绑定事件

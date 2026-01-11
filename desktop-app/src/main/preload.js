@@ -51,5 +51,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     } catch (error) {
       return { success: false, error: error.message };
     }
+  },
+
+  // 监听 Python 后端状态
+  onPythonStatus: (callback) => {
+    ipcRenderer.on('python-status', (event, data) => callback(data));
   }
 });

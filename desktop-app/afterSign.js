@@ -12,8 +12,15 @@ exports.default = async function (context) {
   console.log('Signing application with ad-hoc signature...');
 
   try {
-    // Ad-hoc signing with "-"
-    execSync(`codesign --force --deep --sign "-" "${appPath}"`, {
+    // Remove extended attributes that cause signing issues
+    console.log('Removing extended attributes...');
+    execSync(`xattr -cr "${appPath}"`, {
+      stdio: 'inherit'
+    });
+
+    // Ad-hoc signing with "-" and --options=runtime
+    console.log('Applying ad-hoc signature...');
+    execSync(`codesign --force --deep --sign "-" --options=runtime "${appPath}"`, {
       stdio: 'inherit'
     });
     console.log('Application signed successfully!');

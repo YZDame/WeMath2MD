@@ -11,14 +11,18 @@
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
-  "keywords": ["wechat", "markdown", "ocr", "math"],
+  "keywords": [
+    "wechat",
+    "markdown",
+    "ocr",
+    "math"
+  ],
   "author": "yzdame",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0",
+    "electron": "^27.3.11",
     "electron-builder": "^24.9.1"
   },
-  "dependencies": {},
   "build": {
     "appId": "com.wemath2md.app",
     "productName": "WeMath2MD",
@@ -32,11 +36,16 @@
       "python/**/*",
       "node_modules/**/*"
     ],
-    "electronLanguages": ["zh-CN", "en-US"],
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ],
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "assets/icon.icns",
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "assets/entitlements.plist",
@@ -50,7 +59,9 @@
     },
     "win": {
       "icon": "assets/icon.png",
-      "target": ["zip"],
+      "target": [
+        "zip"
+      ],
       "extraResources": [
         {
           "from": "python",
@@ -61,7 +72,9 @@
     "linux": {
       "category": "Utility",
       "icon": "assets/icon.png",
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "extraResources": [
         {
           "from": "python",

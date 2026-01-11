@@ -35,15 +35,28 @@ npm install
 # 创建 Python 打包目录
 echo ""
 echo "正在准备 Python 环境..."
-mkdir -p python/bin
+rm -rf python
+mkdir -p python
 
 # 复制 Python 文件
+echo "复制 Python 文件..."
 cp ../desktop_backend.py python/
 cp ../config.py python/
 cp ../downloader.py python/
 cp ../mineru_converter.py python/
 cp ../logger.py python/
 cp ../temp_manager.py python/
+cp ../main.py python/
+
+# 复制 .env.example 作为 .env 默认配置（如果不存在）
+if [ ! -f ../.env ]; then
+    if [ -f ../.env.example ]; then
+        cp ../.env.example python/.env
+        echo "注意: 已复制 .env.example 作为默认配置"
+    fi
+else
+    cp ../.env python/
+fi
 
 # 创建 requirements.txt
 cat > python/requirements.txt << 'EOF'
@@ -57,19 +70,25 @@ tqdm>=4.64.0
 openai>=1.0.0
 EOF
 
-# 创建 Python 启动脚本
-cat > python/start.py << 'EOF'
-#!/usr/bin/env python3
-import sys
-import os
+# 创建 README 说明用户需要安装依赖
+cat > python/README.txt << 'EOF'
+WeMath2MD Desktop - Python 依赖说明
+=====================================
 
-# 添加当前目录到路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+此应用需要系统安装 Python 3 和以下依赖包。
 
-# 导入并运行
-import desktop_backend
-desktop_backend.main()
+请在终端运行以下命令安装依赖：
+
+pip3 install -r requirements.txt
+
+或者使用 pip:
+
+pip install flask flask-cors requests beautifulsoup4 python-dotenv tenacity tqdm openai
+
+安装完成后，重新启动应用程序即可。
 EOF
+
+echo "Python 文件准备完成"
 
 # 构建 macOS 应用
 echo ""
