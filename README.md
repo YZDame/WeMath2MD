@@ -1,5 +1,8 @@
 # WeMath2MD
 
+> ⚠️ **警告：目前 Release 版本中的桌面客户端不可用。**
+
+
 微信公众号数学文章转 Markdown 工具 📐→📝
 
 [![CI](https://github.com/yzdame/WeMath2MD/actions/workflows/ci.yml/badge.svg)](https://github.com/yzdame/WeMath2MD/actions/workflows/ci.yml)
