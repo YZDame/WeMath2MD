@@ -1,233 +1,160 @@
 # WeMath2MD
 
-微信公众号数学文章转 Markdown 工具 📐→📝
+微信公众号文章转 Markdown 工具，主用法是 CLI。
+
+它会先抓取文章里的图片，再调用 [MinerU](https://mineru.net) OCR API，把内容、公式和图片整理成一个可继续编辑的 Markdown 结果。
 
 [![CI](https://github.com/yzdame/WeMath2MD/actions/workflows/ci.yml/badge.svg)](https://github.com/yzdame/WeMath2MD/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/yzdame/WeMath2MD/branch/main/graph/badge.svg)](https://codecov.io/gh/yzdame/WeMath2MD)
 
-将微信公众号中的数学讲义/文章图片批量下载，通过 [MinerU](https://mineru.net) OCR API 识别，自动合并为一个完整的 Markdown 文件。
+## 运行要求
 
-## ✨ 功能特点
+- Python 3.10+
+- 一个可用的 `MINERU_API_TOKEN`
 
-- 🔗 自动提取公众号文章标题
-- 🖼️ 批量下载文章中的所有图片
-- 🔍 调用 MinerU API 进行 OCR 识别（支持数学公式）
-- 📄 自动合并多张图片的识别结果为一个 Markdown 文件
-- 📦 自动打包输出结果为 ZIP 文件
-- 🌐 **提供简洁现代的 Web 界面**
-- ⚡ **支持批量处理多个文章**
-- 🎛️ **灵活的 CLI 选项（verbose/quiet/dry-run）**
+当前项目是 Python 实现，没有独立二进制发行版，所以运行时必须有 Python 环境。  
+你不一定非要手动建虚拟环境，但机器上必须能运行 Python，并安装项目依赖。虚拟环境只是推荐做法，用来隔离依赖。
 
-## 📁 输出目录结构
-
-```
-output/
-├── {文章标题}__{run_id}/
-│   ├── downloaded_images/     ← 原始下载的图片
-│   │   ├── 001.jpg
-│   │   ├── 002.png
-│   │   └── ...
-│   ├── converted/             ← MinerU 转换结果
-│   │   ├── converted.md       ← 合并后的 Markdown
-│   │   └── images/            ← 识别结果中的图片
-│   │       └── ...
-└── {文章标题}__{run_id}.zip    ← 打包的完整结果
-```
-
-## 🚀 快速开始
-
-### 1. 克隆项目
+## 快速开始
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/WeMath2MD.git
 cd WeMath2MD
-```
 
-### 2. 创建虚拟环境
+python -m venv .venv
+source .venv/bin/activate
 
-**支持 Python 3.10+**
-
-```bash
-# 使用 conda
-conda create -p .conda python=3.11
-conda activate ./.conda
-
-# 或使用 venv
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-```
-
-### 3. 安装依赖
-
-```bash
 pip install -r requirements.txt
-```
-
-### 4. 安装命令行工具（可选）
-
-```bash
 pip install -e .
-```
 
-安装后可以直接使用 `wemath2md` 命令。
-
-### 5. 配置 API Token
-
-1. 前往 [MinerU](https://mineru.net) 注册并获取 API Token
-2. 复制 `.env.example` 为 `.env`
-3. 填入你的 API Token
-
-```bash
 cp .env.example .env
-# 编辑 .env 文件，填入你的 Token
+# 编辑 .env，填入 MINERU_API_TOKEN
 ```
 
-### 6. 运行
+安装完成后可以直接使用 `wemath2md`。
+
+## CLI 用法
+
+最常用的命令：
 
 ```bash
-# 方式一：命令行参数
-wemath2md https://mp.weixin.qq.com/s/xxxxx
-
-# 方式二：交互式（直接运行后输入链接）
-wemath2md
-
-# 方式三：使用 Python 运行
-python main.py https://mp.weixin.qq.com/s/xxxxx
-```
-
-## 📖 使用方法
-
-### 方式一：命令行（推荐）
-
-```bash
-# 基本用法
-wemath2md https://mp.weixin.qq.com/s/xxxxx
+# 单篇文章
+wemath2md "https://mp.weixin.qq.com/s/xxxxx"
 
 # 指定输出目录
-wemath2md https://mp.weixin.qq.com/s/xxxxx -o my_output
+wemath2md "https://mp.weixin.qq.com/s/xxxxx" -o output
 
-# 详细输出模式（显示 DEBUG 日志）
-wemath2md https://mp.weixin.qq.com/s/xxxxx -v
-
-# 静默模式（只输出错误）
-wemath2md https://mp.weixin.qq.com/s/xxxxx -q
-
-# 批量处理（从文件读取 URL，每行一个）
+# 批量处理
 wemath2md -f urls.txt
 
-# 预览模式（验证 URL，不实际处理）
+# 预检查 URL，不实际执行
 wemath2md -f urls.txt --dry-run
 
-# 不显示进度条
-wemath2md https://mp.weixin.qq.com/s/xxxxx --no-progress
+# 详细日志
+wemath2md "https://mp.weixin.qq.com/s/xxxxx" -v
 
-# 交互模式（不传链接，运行后提示输入）
+# 静默模式
+wemath2md "https://mp.weixin.qq.com/s/xxxxx" -q
+
+# 不显示进度条
+wemath2md "https://mp.weixin.qq.com/s/xxxxx" --no-progress
+
+# 交互模式
 wemath2md
 ```
 
-### 方式二：Web 界面（备用）
+也可以不安装 CLI，直接运行：
+
+```bash
+python main.py "https://mp.weixin.qq.com/s/xxxxx"
+```
+
+## CLI 参数
+
+| 参数 | 说明 |
+|------|------|
+| `url` | 文章链接，可选 |
+| `-o, --output` | 输出目录，默认 `output` |
+| `-f, --file` | 从文件读取 URL，一行一个 |
+| `-v, --verbose` | 输出 DEBUG 日志 |
+| `-q, --quiet` | 仅输出错误 |
+| `--no-progress` | 不显示进度条 |
+| `--dry-run` | 只检查输入，不执行下载和 OCR |
+
+## 输出结构
+
+每次运行都会生成独立目录，避免同标题文章互相覆盖：
+
+```text
+output/
+├── {article_title}__{run_id}/
+│   ├── downloaded_images/
+│   ├── converted/
+│   │   ├── converted.md
+│   │   └── images/
+└── {article_title}__{run_id}.zip
+```
+
+## Web 备用入口
+
+Web 现在是备用方式，不是主入口。
+
+启动方式：
 
 ```bash
 python web_app.py
 ```
 
-然后打开浏览器访问 <http://localhost:8080>，粘贴链接即可。
+默认访问 [http://localhost:8080](http://localhost:8080)。
 
-**Web 界面特性**：
-- 异步处理，长时间任务不会超时
-- 实时进度显示（10% → 50% → 100%）
-- 支持 Markdown 预览和下载
+Web 端保留这些能力：
 
-![Web界面](https://pauline.oss-cn-shenzhen.aliyuncs.com/img/screencapture-localhost-8080-2026-01-10-22_20_00.png)
+- 提交转换任务
+- 查询进度
+- 下载 Markdown / ZIP
+- 预览 Markdown
 
-**命令行参数说明**：
+出于安全考虑，Web 默认只允许抓取 `mp.weixin.qq.com`。
 
-| 参数 | 说明 |
-|------|------|
-| `url` | 文章链接（可选） |
-| `-o, --output` | 输出目录（默认: output） |
-| `-v, --verbose` | 详细输出模式（DEBUG 级别） |
-| `-q, --quiet` | 静默模式（只输出错误） |
-| `-f, --file` | 从文件读取 URL 批量处理 |
-| `--no-progress` | 不显示进度条 |
-| `--dry-run` | 预览模式（只验证 URL） |
+## 环境变量
 
-### 方式三：分步执行（调试）
-
-```bash
-# 第一步：下载图片
-python downloader.py
-
-# 第二步：OCR 识别转换
-python mineru_converter.py
-```
-
-## 🛠️ 项目结构
-
-| 文件/目录 | 说明 |
-|-----------|------|
-| `web_app.py` | Web 界面服务（异步处理 + 进度跟踪） |
-| `main.py` | 命令行主程序（支持批量处理） |
-| `downloader.py` | 下载公众号图片，提取文章标题（并发下载） |
-| `mineru_converter.py` | 调用 MinerU API 识别并合并结果（并发上传） |
-| `config.py` | 统一配置管理（支持环境变量） |
-| `logger.py` | 日志系统配置 |
-| `temp_manager.py` | 临时目录管理（自动清理） |
-| `tests/` | 自动化测试目录 |
-| `.github/workflows/` | CI/CD 配置 |
-
-## ⚙️ 配置说明
-
-### 环境变量
-
-创建 `.env` 文件（可从 `.env.example` 复制）并配置以下变量：
+创建 `.env` 文件后可配置以下变量：
 
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
-| `MINERU_API_TOKEN` | MinerU API Token（必填） | - |
-| `LOG_LEVEL` | 日志级别 | INFO |
-| `WEB_SECRET_KEY` | Web Flask 密钥 | dev-secret-key |
-| `WEB_CORS_ENABLED` | 是否启用 CORS | true |
-| `WEB_CORS_ORIGINS` | 允许的 CORS 来源 | * |
-| `WEB_DEBUG` | Web 调试模式 | false |
-| `WEB_HOST` | Web 监听地址 | 127.0.0.1 |
-| `WEB_PORT` | Web 监听端口 | 8080 |
-| `WEB_ALLOWED_ARTICLE_HOSTS` | Web 允许抓取的域名（逗号分隔） | mp.weixin.qq.com |
-| `WEB_MAX_CONCURRENT_TASKS` | Web 后台并发任务数 | 2 |
+| `MINERU_API_TOKEN` | MinerU API Token，必填 | - |
+| `WEB_SECRET_KEY` | Flask Secret Key | `dev-secret-key-change-in-production` |
+| `WEB_CORS_ENABLED` | 是否启用 CORS | `true` |
+| `WEB_CORS_ORIGINS` | 允许的 CORS 来源 | `*` |
+| `WEB_DEBUG` | Web 调试模式 | `true` |
+| `WEB_PORT` | Web 端口 | `8080` |
+| `WEB_ALLOWED_ARTICLE_HOSTS` | Web 允许抓取的域名，逗号分隔 | `mp.weixin.qq.com` |
+| `WEB_MAX_CONCURRENT_TASKS` | Web 后台最大并发任务数 | `2` |
 
-### 配置文件
+更细的默认值可以看 [config.py](/Users/leyudame/Documents/WeMath2MD/config.py)。
 
-所有配置都支持通过环境变量覆盖，无需修改代码。详见 `config.py`。
-
-## 📝 注意事项
-
-- MinerU API 有调用频率限制，请合理使用
-- 公众号文章需要能够公开访问
-- 部分反爬严格的文章可能无法下载
-
-## 🤝 贡献指南
-
-欢迎贡献代码！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解如何参与开发。
-
-### 开发者相关
+## 调试与开发
 
 ```bash
+# 只执行第一阶段：下载图片
+python downloader.py
+
+# 只执行第二阶段：调用 MinerU OCR
+python mineru_converter.py
+
 # 运行测试
 pytest
 
-# 运行测试并查看覆盖率
+# 覆盖率
 pytest --cov=. --cov-report=term-missing
-
-# 安装 pre-commit hooks（推荐）
-pip install pre-commit
-pre-commit install
 ```
 
-## 📄 License
+## 注意事项
+
+- 文章必须是公开可访问的。
+- MinerU API 有速率和额度限制。
+- 某些文章如果反爬严格，下载阶段可能失败。
+
+## License
 
 [MIT License](LICENSE)
-
-## 🙏 致谢
-
-- [MinerU](https://mineru.net) - 提供强大的文档 OCR 能力（本项目通过 API 调用其服务，不包含 MinerU 源代码）
-- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) - HTML 解析
