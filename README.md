@@ -25,13 +25,19 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
-pip install -e .
+pip install . --no-build-isolation
 
 cp .env.example .env
 # 编辑 .env，填入 MINERU_API_TOKEN
 ```
 
 安装完成后可以直接使用 `wemath2md`。
+
+如果你是在开发这个项目，而不是单纯使用它，再考虑 editable 安装：
+
+```bash
+pip install -e . --no-build-isolation --config-settings editable_mode=compat
+```
 
 ## CLI 用法
 

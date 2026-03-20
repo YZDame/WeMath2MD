@@ -1,0 +1,2 @@
+"""WeMath2MD package."""
+
