@@ -42,10 +42,6 @@ def setup_logger(
     # 获取或创建 logger
     logger = logging.getLogger(name)
 
-    # 避免重复添加 handler
-    if logger.handlers:
-        return logger
-
     # 设置日志级别
     log_level = LOG_LEVELS.get(level.upper(), logging.INFO)
     logger.setLevel(log_level)
@@ -55,6 +51,24 @@ def setup_logger(
         format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     formatter = logging.Formatter(format_string, datefmt="%Y-%m-%d %H:%M:%S")
+
+    # 已有 handler 时，更新其级别与格式，并按需补充 file handler
+    if logger.handlers:
+        has_file_handler = False
+        for handler in logger.handlers:
+            handler.setLevel(log_level)
+            handler.setFormatter(formatter)
+            if isinstance(handler, logging.FileHandler):
+                has_file_handler = True
+
+        if log_file and not has_file_handler:
+            log_path = Path(log_dir) / log_file
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            file_handler = logging.FileHandler(log_path, encoding="utf-8")
+            file_handler.setLevel(log_level)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+        return logger
 
     # 控制台 handler
     console_handler = logging.StreamHandler(sys.stdout)

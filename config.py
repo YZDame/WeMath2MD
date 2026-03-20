@@ -112,6 +112,10 @@ class WebConfig:
     # 任务配置
     task_poll_interval_ms: int = 2000  # 前端轮询间隔（毫秒）
     task_max_poll_attempts: int = 300   # 最多轮询次数（10分钟）
+    max_concurrent_tasks: int = 2       # Web 后台最大并发任务数
+
+    # 安全配置：允许抓取的文章域名
+    allowed_article_hosts: tuple[str, ...] = ("mp.weixin.qq.com",)
 
     def __post_init__(self):
         """从环境变量读取配置"""
@@ -142,6 +146,22 @@ class WebConfig:
             # 支持逗号分隔的多个来源
             origins = [o.strip() for o in cors_origins_env.split(',')]
             object.__setattr__(self, 'cors_origins', origins)
+
+        max_concurrent_tasks_env = os.getenv('WEB_MAX_CONCURRENT_TASKS', '')
+        if max_concurrent_tasks_env.isdigit():
+            value = int(max_concurrent_tasks_env)
+            if value > 0:
+                object.__setattr__(self, 'max_concurrent_tasks', value)
+
+        allowed_hosts_env = os.getenv('WEB_ALLOWED_ARTICLE_HOSTS', '')
+        if allowed_hosts_env.strip():
+            hosts = tuple(
+                h.strip().lower()
+                for h in allowed_hosts_env.split(',')
+                if h.strip()
+            )
+            if hosts:
+                object.__setattr__(self, 'allowed_article_hosts', hosts)
 
 
 @dataclass(frozen=True)

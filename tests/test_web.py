@@ -5,7 +5,7 @@ Web 应用单元测试
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 import sys
 from pathlib import Path
 
@@ -117,12 +117,9 @@ class TestWebRoutes:
         assert data['success'] is False
         assert '无效的链接格式' in data['error']
 
-    @patch('web_app.threading.Thread')
-    def test_convert_route_success(self, mock_thread, client):
+    @patch('web_app.task_executor.submit')
+    def test_convert_route_success(self, mock_submit, client):
         """测试转换路由成功提交"""
-        mock_thread_instance = MagicMock()
-        mock_thread.return_value = mock_thread_instance
-
         response = client.post('/convert',
                              json={'url': 'https://mp.weixin.qq.com/s/test123'},
                              content_type='application/json')
@@ -130,8 +127,20 @@ class TestWebRoutes:
         data = response.get_json()
         assert data['success'] is True
         assert 'task_id' in data
-        # 验证后台线程被启动
-        mock_thread_instance.start.assert_called_once()
+        # 验证后台任务被提交
+        mock_submit.assert_called_once()
+
+    def test_convert_route_blocked_host(self, client):
+        """测试非白名单域名被拒绝"""
+        response = client.post(
+            '/convert',
+            json={'url': 'https://example.com/article'},
+            content_type='application/json'
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['success'] is False
+        assert '仅允许以下域名' in data['error']
 
     def test_status_route_not_found(self, client):
         """测试状态路由任务不存在"""

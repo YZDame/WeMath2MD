@@ -16,11 +16,10 @@ from pathlib import Path
 from typing import Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tenacity import (
-    retry,
+    Retrying,
     stop_after_attempt,
     wait_exponential,
     retry_if_exception_type,
-    before_sleep_log
 )
 from logger import get_logger
 from config import mineru as cfg
@@ -64,38 +63,85 @@ class MinerUConverter:
         # 获取重试配置
         self._retry_config = cfg.retry
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
-        before_sleep=before_sleep_log(logger, logger.level),
-        reraise=True
-    )
     def _api_post(self, url: str, **kwargs) -> requests.Response:
         """带重试的 POST 请求"""
-        return requests.post(url, headers=self.headers, **kwargs)
+        retrying = Retrying(
+            stop=stop_after_attempt(self._retry_config.max_attempts),
+            wait=wait_exponential(
+                multiplier=self._retry_config.wait_multiplier,
+                min=self._retry_config.wait_min,
+                max=self._retry_config.wait_max
+            ),
+            retry=retry_if_exception_type(self.RETRYABLE_EXCEPTIONS),
+            reraise=True
+        )
+        for attempt in retrying:
+            with attempt:
+                kwargs.setdefault("timeout", cfg.request_timeout)
+                return requests.post(
+                    url,
+                    headers=self.headers,
+                    **kwargs
+                )
+        raise RuntimeError("POST 重试失败")
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
-        before_sleep=before_sleep_log(logger, logger.level),
-        reraise=True
-    )
     def _api_get(self, url: str, **kwargs) -> requests.Response:
         """带重试的 GET 请求"""
-        return requests.get(url, headers=self.headers, **kwargs)
+        retrying = Retrying(
+            stop=stop_after_attempt(self._retry_config.max_attempts),
+            wait=wait_exponential(
+                multiplier=self._retry_config.wait_multiplier,
+                min=self._retry_config.wait_min,
+                max=self._retry_config.wait_max
+            ),
+            retry=retry_if_exception_type(self.RETRYABLE_EXCEPTIONS),
+            reraise=True
+        )
+        for attempt in retrying:
+            with attempt:
+                kwargs.setdefault("timeout", cfg.request_timeout)
+                return requests.get(
+                    url,
+                    headers=self.headers,
+                    **kwargs
+                )
+        raise RuntimeError("GET 重试失败")
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
-        before_sleep=before_sleep_log(logger, logger.level),
-        reraise=True
-    )
     def _http_get(self, url: str, **kwargs) -> requests.Response:
         """带重试的普通 HTTP GET 请求（用于下载文件）"""
-        return requests.get(url, **kwargs)
+        retrying = Retrying(
+            stop=stop_after_attempt(self._retry_config.max_attempts),
+            wait=wait_exponential(
+                multiplier=self._retry_config.wait_multiplier,
+                min=self._retry_config.wait_min,
+                max=self._retry_config.wait_max
+            ),
+            retry=retry_if_exception_type(self.RETRYABLE_EXCEPTIONS),
+            reraise=True
+        )
+        for attempt in retrying:
+            with attempt:
+                kwargs.setdefault("timeout", cfg.request_timeout)
+                return requests.get(url, **kwargs)
+        raise RuntimeError("下载 GET 重试失败")
+
+    def _http_put(self, url: str, **kwargs) -> requests.Response:
+        """带重试的普通 HTTP PUT 请求（用于上传文件）"""
+        retrying = Retrying(
+            stop=stop_after_attempt(self._retry_config.max_attempts),
+            wait=wait_exponential(
+                multiplier=self._retry_config.wait_multiplier,
+                min=self._retry_config.wait_min,
+                max=self._retry_config.wait_max
+            ),
+            retry=retry_if_exception_type(self.RETRYABLE_EXCEPTIONS),
+            reraise=True
+        )
+        for attempt in retrying:
+            with attempt:
+                kwargs.setdefault("timeout", cfg.request_timeout)
+                return requests.put(url, **kwargs)
+        raise RuntimeError("上传 PUT 重试失败")
     
     def apply_upload_urls(self, file_names: list[str]) -> tuple[str, list[str]]:
         """步骤1: 批量申请上传链接"""
@@ -138,7 +184,7 @@ class MinerUConverter:
         """
         try:
             with open(file_path, 'rb') as f:
-                response = requests.put(upload_url, data=f)
+                response = self._http_put(upload_url, data=f)
 
             if response.status_code == 200:
                 logger.info(f"上传成功: {os.path.basename(file_path)}")
@@ -161,6 +207,8 @@ class MinerUConverter:
             成功上传的文件数量
         """
         logger.info(f"使用 {cfg.max_concurrent_uploads} 线程并发上传 {len(file_paths)} 个文件...")
+        if len(file_paths) != len(upload_urls):
+            raise ValueError(f"上传链接数量不匹配: files={len(file_paths)}, urls={len(upload_urls)}")
 
         success_count = 0
 

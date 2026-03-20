@@ -30,8 +30,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 from logger import setup_logger, get_logger
 from config import downloader as cfg, get_mineru_token, validate_config
-from downloader import WechatImageDownloader
-from mineru_converter import MinerUConverter
+from conversion_service import convert_wechat_article
 import temp_manager
 
 # 加载 .env 文件
@@ -81,64 +80,35 @@ def process_wechat_article(
         logger.info("微信公众号文章 → Markdown 转换工具")
         logger.info("=" * 60)
 
-    # ==================== 第一阶段：下载图片 ====================
-    if not quiet:
-        logger.info("【第一阶段】下载公众号图片")
-
+    progress_state = {"last_percent": 0}
     with tqdm(total=2, desc="总进度", disable=not show_progress or quiet, unit="阶段") as pbar:
-        pbar.set_description("下载图片中...")
-        downloader = WechatImageDownloader(output_dir=output_dir)
-        download_result = downloader.download_from_url(url)
+        def on_progress(message: str, percent: int) -> None:
+            pbar.set_description(message)
+            if progress_state["last_percent"] < 50 <= percent:
+                pbar.update(1)
+            if progress_state["last_percent"] < 100 <= percent:
+                pbar.update(1)
+                pbar.set_description("完成!")
+            progress_state["last_percent"] = percent
 
-        if not download_result:
-            logger.error("下载失败，程序终止")
-            pbar.close()
-            return None
-
-        pbar.update(1)
-        if not quiet:
-            logger.info(f"第一阶段完成！文章标题: {download_result['title']}, 下载图片: {len(download_result['images'])} 张")
-
-        # ==================== 第二阶段：OCR 识别转换 ====================
-        if not quiet:
-            logger.info("【第二阶段】MinerU OCR 识别转换")
-        pbar.set_description("OCR 转换中...")
-
-        converter = MinerUConverter(api_token=api_token)
-        convert_result = converter.convert_images(
-            image_dir=download_result['images_dir'],
-            output_dir=download_result['result_dir'],
-            output_name="converted"
+        final_result = convert_wechat_article(
+            url=url,
+            api_token=api_token,
+            output_dir=output_dir,
+            progress_callback=on_progress
         )
 
-        if not convert_result:
-            logger.error("转换失败")
-            pbar.close()
-            return None
+    if not final_result:
+        logger.error("处理失败")
+        return None
 
-        pbar.update(1)
-        pbar.set_description("完成!")
-
-    # ==================== 完成 ====================
     if not quiet:
         logger.info("全部完成！")
-
-    final_result = {
-        'title': download_result['title'],
-        'result_dir': download_result['result_dir'],
-        'downloaded_images_dir': download_result['images_dir'],
-        'converted_dir': convert_result['output_dir'],
-        'md_file': convert_result['md_file'],
-        'converted_images_dir': convert_result['images_dir'],
-        'zip_file': convert_result['zip_file'],
-        'original_image_count': len(download_result['images']),
-        'extracted_image_count': convert_result['image_count']
-    }
-
-    if not quiet:
-        logger.info(f"最终结果: 文章标题={final_result['title']}, 结果目录={final_result['result_dir']}, "
-                    f"原始图片={final_result['original_image_count']}张, Markdown={final_result['md_file']}, "
-                    f"提取图片={final_result['extracted_image_count']}张, ZIP={final_result['zip_file']}")
+        logger.info(
+            f"最终结果: 文章标题={final_result['title']}, 结果目录={final_result['result_dir']}, "
+            f"原始图片={final_result['original_image_count']}张, Markdown={final_result['md_file']}, "
+            f"提取图片={final_result['extracted_image_count']}张, ZIP={final_result['zip_file']}"
+        )
 
     return final_result
 
@@ -199,7 +169,6 @@ def main() -> None:
         log_level = "ERROR"
 
     # 初始化日志系统
-    from config import logging as log_cfg
     setup_logger(level=log_level, log_file="wemath2md.log")
 
     # 初始化临时目录清理（清理超过 24 小时的旧临时目录）

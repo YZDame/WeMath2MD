@@ -5,20 +5,20 @@ WeMath2MD Web 界面
 """
 
 import os
-import sys
 import uuid
 import threading
 from enum import Enum
 from typing import Any
 from pathlib import Path
+from urllib.parse import urlparse
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, render_template, request, jsonify, send_file, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
 from logger import setup_logger, get_logger
 from config import web as cfg, get_mineru_token
 
-from downloader import WechatImageDownloader
-from mineru_converter import MinerUConverter
+from conversion_service import convert_wechat_article
 
 
 class TaskState(str, Enum):
@@ -60,6 +60,13 @@ conversion_history: list[dict[str, Any]] = []
 
 # 存储任务状态 {task_id: {state, progress, result, error}}
 tasks: dict[str, dict[str, Any]] = {}
+tasks_lock = threading.Lock()
+
+# 受控线程池，防止无限制创建后台线程
+task_executor = ThreadPoolExecutor(
+    max_workers=cfg.max_concurrent_tasks,
+    thread_name_prefix="wemath2md-task"
+)
 
 # 安全的文件访问基础目录
 BASE_DIR = Path(__file__).parent.resolve()
@@ -101,64 +108,52 @@ def run_conversion_task(task_id: str, url: str, api_token: str) -> None:
         api_token: MinerU API Token
     """
     try:
-        # 更新状态：开始处理
-        tasks[task_id]['state'] = TaskState.PROCESSING
-        tasks[task_id]['progress'] = '下载图片中...'
-        tasks[task_id]['progress_percent'] = 10
+        with tasks_lock:
+            tasks[task_id]['state'] = TaskState.PROCESSING
+            tasks[task_id]['progress'] = '下载图片中...'
+            tasks[task_id]['progress_percent'] = 10
 
-        # 第一阶段：下载图片
-        downloader = WechatImageDownloader(output_dir=app.config['OUTPUT_DIR'])
-        download_result = downloader.download_from_url(url)
+        def on_progress(message: str, percent: int) -> None:
+            with tasks_lock:
+                tasks[task_id]['progress'] = message
+                tasks[task_id]['progress_percent'] = percent
 
-        if not download_result:
-            tasks[task_id]['state'] = TaskState.FAILED
-            tasks[task_id]['error'] = '下载文章图片失败'
-            tasks[task_id]['progress_percent'] = 0
-            return
-
-        # 更新进度
-        tasks[task_id]['progress'] = 'OCR 转换中...'
-        tasks[task_id]['progress_percent'] = 50
-
-        # 第二阶段：OCR 转换
-        converter = MinerUConverter(api_token=api_token)
-        convert_result = converter.convert_images(
-            image_dir=download_result['images_dir'],
-            output_dir=download_result['result_dir'],
-            output_name="converted"
+        final_result = convert_wechat_article(
+            url=url,
+            api_token=api_token,
+            output_dir=app.config['OUTPUT_DIR'],
+            progress_callback=on_progress
         )
-
-        if not convert_result:
-            tasks[task_id]['state'] = TaskState.FAILED
-            tasks[task_id]['error'] = 'OCR 转换失败'
-            tasks[task_id]['progress_percent'] = 0
+        if not final_result:
+            with tasks_lock:
+                tasks[task_id]['state'] = TaskState.FAILED
+                tasks[task_id]['error'] = '转换失败'
+                tasks[task_id]['progress_percent'] = 0
             return
 
-        # 保存结果
         result = {
-            'title': download_result['title'],
-            'md_file': convert_result['md_file'],
-            'zip_file': convert_result['zip_file'],
-            'image_count': convert_result['image_count'],
-            'result_dir': download_result['result_dir']
+            'title': final_result['title'],
+            'md_file': final_result['md_file'],
+            'zip_file': final_result['zip_file'],
+            'image_count': final_result['extracted_image_count'],
+            'result_dir': final_result['result_dir']
         }
 
-        # 添加到历史记录
-        conversion_history.insert(0, result)
-        if len(conversion_history) > cfg.max_history_items:
-            conversion_history.pop()
-
-        # 更新状态：完成
-        tasks[task_id]['state'] = TaskState.DONE
-        tasks[task_id]['progress'] = '完成'
-        tasks[task_id]['progress_percent'] = 100
-        tasks[task_id]['result'] = result
+        with tasks_lock:
+            conversion_history.insert(0, result)
+            if len(conversion_history) > cfg.max_history_items:
+                conversion_history.pop()
+            tasks[task_id]['state'] = TaskState.DONE
+            tasks[task_id]['progress'] = '完成'
+            tasks[task_id]['progress_percent'] = 100
+            tasks[task_id]['result'] = result
         logger.info(f"任务 {task_id} 转换成功: {result['title']}")
 
     except Exception as e:
         logger.error(f"任务 {task_id} 转换失败: {e}")
-        tasks[task_id]['state'] = TaskState.FAILED
-        tasks[task_id]['error'] = str(e)
+        with tasks_lock:
+            tasks[task_id]['state'] = TaskState.FAILED
+            tasks[task_id]['error'] = str(e)
 
 
 @app.route('/')
@@ -181,6 +176,13 @@ def convert() -> Response:
 
     if not url.startswith('http'):
         return jsonify({'success': False, 'error': '无效的链接格式'})
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if host not in cfg.allowed_article_hosts:
+        return jsonify({
+            'success': False,
+            'error': f"仅允许以下域名: {', '.join(cfg.allowed_article_hosts)}"
+        })
 
     # 优先使用用户传入的 Token，如果没有则使用服务器配置的 Token
     api_token = user_api_token or get_mineru_token()
@@ -191,20 +193,17 @@ def convert() -> Response:
     task_id = str(uuid.uuid4())
 
     # 初始化任务状态
-    tasks[task_id] = {
-        'state': TaskState.PENDING,
-        'progress': '等待开始...',
-        'result': None,
-        'error': None
-    }
+    with tasks_lock:
+        tasks[task_id] = {
+            'state': TaskState.PENDING,
+            'progress': '等待开始...',
+            'progress_percent': 0,
+            'result': None,
+            'error': None
+        }
 
-    # 启动后台线程执行转换
-    thread = threading.Thread(
-        target=run_conversion_task,
-        args=(task_id, url, api_token),
-        daemon=True
-    )
-    thread.start()
+    # 使用受控线程池执行任务
+    task_executor.submit(run_conversion_task, task_id, url, api_token)
 
     logger.info(f"任务 {task_id} 已提交，后台处理中...")
     return jsonify({
@@ -217,10 +216,10 @@ def convert() -> Response:
 @app.route('/status/<task_id>')
 def task_status(task_id: str) -> Response:
     """查询任务状态"""
-    if task_id not in tasks:
+    with tasks_lock:
+        task = tasks.get(task_id)
+    if task is None:
         return jsonify({'success': False, 'error': '任务不存在'})
-
-    task = tasks[task_id]
     response = {
         'success': True,
         'state': task['state'].value,

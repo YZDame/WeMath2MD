@@ -17,7 +17,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/YOUR_USERNAME/WeMath2MD",
     packages=find_packages(),
-    py_modules=["main", "downloader", "mineru_converter"],
+    py_modules=["main", "downloader", "mineru_converter", "conversion_service"],
     install_requires=requirements,
     python_requires=">=3.8",
     entry_points={

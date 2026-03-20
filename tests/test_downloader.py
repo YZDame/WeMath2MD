@@ -66,7 +66,9 @@ class TestWechatImageDownloader:
         result_dir = downloader.setup_directories("测试标题")
 
         assert downloader.article_title == "测试标题"
-        assert downloader.result_dir == downloader.output_dir / "测试标题"
+        assert downloader.result_dir is not None
+        assert downloader.result_dir.parent == downloader.output_dir
+        assert downloader.result_dir.name.startswith("测试标题__")
         assert downloader.images_dir == downloader.result_dir / "downloaded_images"
         assert result_dir.exists()
         assert downloader.images_dir.exists()

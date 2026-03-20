@@ -1,8 +1,5 @@
 # WeMath2MD
 
-> ⚠️ **警告：目前 Release 版本中的桌面客户端不可用。**
-
-
 微信公众号数学文章转 Markdown 工具 📐→📝
 
 [![CI](https://github.com/yzdame/WeMath2MD/actions/workflows/ci.yml/badge.svg)](https://github.com/yzdame/WeMath2MD/actions/workflows/ci.yml)
@@ -25,16 +22,16 @@
 
 ```
 output/
-└── {文章标题}/
-    ├── downloaded_images/     ← 原始下载的图片
-    │   ├── 001.jpg
-    │   ├── 002.png
-    │   └── ...
-    ├── converted/             ← MinerU 转换结果
-    │   ├── converted.md       ← 合并后的 Markdown
-    │   └── images/            ← 识别结果中的图片
-    │       └── ...
-    └── {文章标题}.zip          ← 打包的完整结果
+├── {文章标题}__{run_id}/
+│   ├── downloaded_images/     ← 原始下载的图片
+│   │   ├── 001.jpg
+│   │   ├── 002.png
+│   │   └── ...
+│   ├── converted/             ← MinerU 转换结果
+│   │   ├── converted.md       ← 合并后的 Markdown
+│   │   └── images/            ← 识别结果中的图片
+│   │       └── ...
+└── {文章标题}__{run_id}.zip    ← 打包的完整结果
 ```
 
 ## 🚀 快速开始
@@ -100,22 +97,7 @@ python main.py https://mp.weixin.qq.com/s/xxxxx
 
 ## 📖 使用方法
 
-### 方式一：Web 界面（最简单）
-
-```bash
-python web_app.py
-```
-
-然后打开浏览器访问 <http://localhost:8080>，粘贴链接即可。
-
-**Web 界面特性**：
-- 异步处理，长时间任务不会超时
-- 实时进度显示（10% → 50% → 100%）
-- 支持 Markdown 预览和下载
-
-![Web界面](https://pauline.oss-cn-shenzhen.aliyuncs.com/img/screencapture-localhost-8080-2026-01-10-22_20_00.png)
-
-### 方式二：命令行
+### 方式一：命令行（推荐）
 
 ```bash
 # 基本用法
@@ -143,6 +125,21 @@ wemath2md https://mp.weixin.qq.com/s/xxxxx --no-progress
 wemath2md
 ```
 
+### 方式二：Web 界面（备用）
+
+```bash
+python web_app.py
+```
+
+然后打开浏览器访问 <http://localhost:8080>，粘贴链接即可。
+
+**Web 界面特性**：
+- 异步处理，长时间任务不会超时
+- 实时进度显示（10% → 50% → 100%）
+- 支持 Markdown 预览和下载
+
+![Web界面](https://pauline.oss-cn-shenzhen.aliyuncs.com/img/screencapture-localhost-8080-2026-01-10-22_20_00.png)
+
 **命令行参数说明**：
 
 | 参数 | 说明 |
@@ -155,7 +152,7 @@ wemath2md
 | `--no-progress` | 不显示进度条 |
 | `--dry-run` | 预览模式（只验证 URL） |
 
-### 方式三：分步执行
+### 方式三：分步执行（调试）
 
 ```bash
 # 第一步：下载图片
@@ -195,6 +192,8 @@ python mineru_converter.py
 | `WEB_DEBUG` | Web 调试模式 | false |
 | `WEB_HOST` | Web 监听地址 | 127.0.0.1 |
 | `WEB_PORT` | Web 监听端口 | 8080 |
+| `WEB_ALLOWED_ARTICLE_HOSTS` | Web 允许抓取的域名（逗号分隔） | mp.weixin.qq.com |
+| `WEB_MAX_CONCURRENT_TASKS` | Web 后台并发任务数 | 2 |
 
 ### 配置文件
 

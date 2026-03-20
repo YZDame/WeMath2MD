@@ -3,15 +3,15 @@ from bs4 import BeautifulSoup
 import os
 import time
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tenacity import (
-    retry,
+    Retrying,
     stop_after_attempt,
     wait_exponential,
     retry_if_exception_type,
-    before_sleep_log
 )
 from logger import get_logger
 from config import downloader as cfg
@@ -41,17 +41,24 @@ class WechatImageDownloader:
 
         # 伪装成浏览器，防止反爬
         self.headers = {"User-Agent": cfg.user_agent}
+        self._retry_config = cfg.retry
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
-        before_sleep=before_sleep_log(logger, logger.level),
-        reraise=True
-    )
     def _http_get(self, url: str, **kwargs) -> requests.Response:
         """带重试的 HTTP GET 请求"""
-        return requests.get(url, headers=self.headers, **kwargs)
+        retrying = Retrying(
+            stop=stop_after_attempt(self._retry_config.max_attempts),
+            wait=wait_exponential(
+                multiplier=self._retry_config.wait_multiplier,
+                min=self._retry_config.wait_min,
+                max=self._retry_config.wait_max
+            ),
+            retry=retry_if_exception_type(self.RETRYABLE_EXCEPTIONS),
+            reraise=True
+        )
+        for attempt in retrying:
+            with attempt:
+                return requests.get(url, headers=self.headers, **kwargs)
+        raise RuntimeError("HTTP GET 重试失败")
 
     def get_article_content(self, url: str) -> str | None:
         """获取网页HTML内容"""
@@ -99,13 +106,26 @@ class WechatImageDownloader:
 
         return title or f"article_{int(time.time())}"
     
+    def _build_result_dir(self, title: str) -> Path:
+        """生成唯一输出目录，避免同标题文章结果互相污染。"""
+        safe_title = title.strip() or f"article_{int(time.time())}"
+        run_id = time.strftime("%Y%m%d_%H%M%S")
+        candidate = self.output_dir / f"{safe_title}__{run_id}"
+
+        if not candidate.exists():
+            return candidate
+
+        # 极少数同秒并发场景追加短随机后缀
+        suffix = uuid.uuid4().hex[:6]
+        return self.output_dir / f"{safe_title}__{run_id}_{suffix}"
+
     def setup_directories(self, title: str) -> Path:
         """根据标题设置目录结构"""
         self.article_title = title
 
-        # 创建结果目录: output/{标题}/
-        self.result_dir = self.output_dir / title
-        self.result_dir.mkdir(parents=True, exist_ok=True)
+        # 创建结果目录: output/{标题}__{run_id}/
+        self.result_dir = self._build_result_dir(title)
+        self.result_dir.mkdir(parents=True, exist_ok=False)
 
         # 创建图片子目录: output/{标题}/downloaded_images/
         self.images_dir = self.result_dir / "downloaded_images"
@@ -137,7 +157,7 @@ class WechatImageDownloader:
 
         return images
 
-    def _download_single_image(self, index: int, url: str) -> str | None:
+    def _download_single_image(self, index: int, url: str) -> tuple[int, str] | None:
         """下载单张图片的内部方法（用于并发下载）
 
         Args:
@@ -149,11 +169,13 @@ class WechatImageDownloader:
         """
         try:
             # 获取图片格式
-            fmt = "jpg"  # 默认为jpg
+            fmt = "jpg"  # 默认为 jpg
             if "fmt=" in url:
                 fmt_match = re.search(r'fmt=([a-zA-Z]+)', url)
                 if fmt_match:
-                    fmt = fmt_match.group(1)
+                    fmt = fmt_match.group(1).lower()
+            if f".{fmt}" not in cfg.supported_formats:
+                fmt = "jpg"
 
             # 构造文件名：001.jpg, 002.png ...
             filename = f"{index+1:03d}.{fmt}"
@@ -161,11 +183,12 @@ class WechatImageDownloader:
 
             # 下载（带重试）
             img_resp = self._http_get(url, timeout=cfg.request_timeout)
+            img_resp.raise_for_status()
             with open(filepath, 'wb') as f:
                 f.write(img_resp.content)
 
             logger.info(f"已下载 [{index+1}]: {filename}")
-            return str(filepath)
+            return index, str(filepath)
 
         except Exception as e:
             logger.error(f"下载第 {index+1} 张图片失败: {e}")
@@ -185,7 +208,7 @@ class WechatImageDownloader:
 
         logger.info(f"找到 {len(img_urls)} 张图片，使用 {cfg.max_concurrent_downloads} 线程并发下载...")
 
-        saved_files = []
+        saved_files: list[tuple[int, str]] = []
 
         # 使用线程池并发下载
         with ThreadPoolExecutor(max_workers=cfg.max_concurrent_downloads) as executor:
@@ -211,10 +234,11 @@ class WechatImageDownloader:
                 time.sleep(cfg.download_delay / cfg.max_concurrent_downloads)
 
         # 按原始顺序排序
-        saved_files.sort(key=lambda x: int(Path(x).stem.split('_')[0]) if '_' in Path(x).stem else int(Path(x).stem))
+        saved_files.sort(key=lambda item: item[0])
+        ordered_files = [item[1] for item in saved_files]
 
-        logger.info(f"下载完成: 成功 {len(saved_files)}/{len(img_urls)} 张")
-        return saved_files
+        logger.info(f"下载完成: 成功 {len(ordered_files)}/{len(img_urls)} 张")
+        return ordered_files
     
     def download_from_url(self, url: str) -> dict[str, str | list[str]] | None:
         """
