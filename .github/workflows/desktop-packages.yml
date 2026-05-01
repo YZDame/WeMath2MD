@@ -14,12 +14,21 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            artifact-name: WeMath2MD-Windows
+            release-pattern: release-assets/*.msi
+          - os: macos-latest
+            artifact-name: WeMath2MD-macOS
+            release-pattern: release-assets/*.dmg
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -29,6 +38,20 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Resolve package version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          else
+            VERSION="0.0.0"
+          fi
+          echo "WEMATH2MD_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "Package version: ${VERSION}"
 
       - name: Install dependencies
         run: |
@@ -53,18 +76,28 @@ jobs:
         run: |
           $msi = Get-ChildItem -Recurse -Filter *.msi dist | Select-Object -First 1
           if (-not $msi) { throw 'MSI not found under dist/' }
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          Copy-Item $msi.FullName "release-assets/WeMath2MD-$env:WEMATH2MD_VERSION-windows.msi"
 
       - name: Smoke test build output exists (macOS)
         if: runner.os == 'macOS'
         run: |
           DMG=$(find dist -name '*.dmg' | head -n 1)
           test -n "$DMG"
+          mkdir -p release-assets
+          cp "$DMG" "release-assets/WeMath2MD-${WEMATH2MD_VERSION}-macos-arm64.dmg"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ runner.os }}
-          path: |
-            dist/**/*.msi
-            dist/**/*.dmg
+          name: ${{ matrix.artifact-name }}
+          path: release-assets/*
           if-no-files-found: error
+
+      - name: Upload installers to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name || github.ref_name }}
+          files: ${{ matrix.release-pattern }}
+          fail_on_unmatched_files: true

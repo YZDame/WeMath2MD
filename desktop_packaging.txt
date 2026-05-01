@@ -23,10 +23,12 @@ python setup_desktop.py bdist_dmg
 
 说明
 - 建议在目标系统本机构建（Windows 上构建 MSI，macOS 上构建 DMG）。
+- 可通过 WEMATH2MD_VERSION 指定安装包版本号，例如：WEMATH2MD_VERSION=1.1.2 python setup_desktop.py bdist_dmg。
 - 若需要企业签名/公证，可在各系统上追加签名流程。
 
 
 CI 自动构建（推荐）
 - 已提供 `.github/workflows/desktop-packages.yml`。
 - 在 GitHub Actions 的 Windows runner 产出 MSI，在 macOS runner 产出 DMG。
-- 构建后会自动上传安装包 artifact。
+- 每次构建都会上传安装包 artifact。
+- 推送 v* 标签或发布 GitHub Release 时，会在构建和 smoke test 通过后自动把安装包上传到对应 Release。
