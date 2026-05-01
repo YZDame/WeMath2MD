@@ -174,19 +174,8 @@ def main() -> None:
     # 初始化临时目录清理（清理超过 24 小时的旧临时目录）
     temp_manager.initialize_cleanup(base_dir=Path.cwd(), max_age_hours=24)
 
-    # 从配置读取 API Token
+    # 从配置读取 API Token（仅在实际转换时需要）
     API_TOKEN = get_mineru_token()
-
-    if not API_TOKEN:
-        logger.error("未找到 MINERU_API_TOKEN，请创建 .env 文件并设置 MINERU_API_TOKEN=your_token")
-        sys.exit(1)
-
-    # 验证配置
-    config_check = validate_config()
-    if not config_check['valid']:
-        for error in config_check['errors']:
-            logger.error(error)
-        sys.exit(1)
 
     # 收集所有 URL
     urls = []
@@ -239,6 +228,17 @@ def main() -> None:
         for i, url in enumerate(valid_urls, 1):
             logger.info(f"  {i}. {url}")
         sys.exit(0)
+
+    if not API_TOKEN:
+        logger.error("未找到 MINERU_API_TOKEN，请创建 .env 文件并设置 MINERU_API_TOKEN=your_token")
+        sys.exit(1)
+
+    # 验证配置
+    config_check = validate_config()
+    if not config_check['valid']:
+        for error in config_check['errors']:
+            logger.error(error)
+        sys.exit(1)
 
     # 批量处理
     success_count = 0

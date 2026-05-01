@@ -137,7 +137,49 @@ Web 端保留这些能力：
 | `WEB_ALLOWED_ARTICLE_HOSTS` | Web 允许抓取的域名，逗号分隔 | `mp.weixin.qq.com` |
 | `WEB_MAX_CONCURRENT_TASKS` | Web 后台最大并发任务数 | `2` |
 
-更细的默认值可以看 [config.py](/Users/leyudame/Documents/WeMath2MD/config.py)。
+更细的默认值可以看 [config.py](./config.py)。
+
+
+## 项目结构（简版）
+
+- `main.py`：CLI 主入口（批量处理、日志级别、进度显示）。
+- `web_app.py`：Flask Web 备用入口（提交任务、查状态、下载结果）。
+- `conversion_service.py`：下载 + OCR 的统一编排层（CLI/Web 复用）。
+- `downloader.py`：微信公众号页面解析与图片下载。
+- `mineru_converter.py`：调用 MinerU API 做 OCR 与 Markdown 产出。
+- `config.py`：集中配置（默认值 + 环境变量覆盖 + 启动校验）。
+- `wemath2md/cli.py`：安装后命令 `wemath2md` 的入口封装。
+- `tests/`：pytest 测试。
+
+## 结构改进建议（Roadmap）
+
+1. **包结构统一（优先级高）**
+   - 将根目录核心模块逐步迁入 `wemath2md/` 包，统一为包内绝对导入。
+   - 目标是减少运行路径依赖，降低 `sys.path` 处理复杂度。
+
+2. **结果类型显式化（优先级高）**
+   - 为 `conversion_service` 返回值引入 `TypedDict` 或 `dataclass`（如 `ConversionResult`）。
+   - 避免 CLI/Web 通过字符串 key 访问“松散 dict”导致的运行时错误。
+
+3. **Web 任务状态持久化（优先级中）**
+   - 当前任务状态在进程内内存中，服务重启后会丢失。
+   - 可先用 SQLite，后续演进到 Redis + 队列（RQ/Celery）。
+
+4. **配置职责拆分（优先级中）**
+   - 将“配置定义 / 环境解析 / 校验逻辑”拆成独立模块，提升可维护性。
+
+5. **测试分层（优先级中）**
+   - 在现有模块测试基础上，逐步拆分 `unit / integration`，增强 Web 并发与失败场景覆盖。
+
+
+## 桌面客户端安装包（Windows/macOS）
+
+如果你希望像常规客户端一样安装使用（而不是手动运行 Python 命令），项目支持通过 `cx_Freeze` 打包：
+
+- Windows：`python setup_desktop.py bdist_msi` 生成 `.msi`
+- macOS：`python setup_desktop.py bdist_dmg` 生成 `.dmg`
+
+详细步骤见 [desktop_packaging.txt](./desktop_packaging.txt)。
 
 ## 调试与开发
 

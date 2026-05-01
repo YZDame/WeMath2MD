@@ -1,0 +1,32 @@
+WeMath2MD 桌面客户端打包指南（Windows/macOS）
+
+本项目提供可打包为本地安装包的桌面入口：desktop_client.py。
+
+产物目标
+- Windows: .msi
+- macOS: .dmg
+
+依赖
+pip install cx_Freeze
+pip install -r requirements.txt
+
+Windows 打包（MSI）
+python setup_desktop.py bdist_msi
+
+macOS 打包（DMG）
+python setup_desktop.py bdist_dmg
+
+客户端行为
+- 启动本地 Flask 服务（默认 127.0.0.1 + 自动选端口）
+- 自动打开默认浏览器进入本地界面
+- 关闭进程时自动停止后台服务
+
+说明
+- 建议在目标系统本机构建（Windows 上构建 MSI，macOS 上构建 DMG）。
+- 若需要企业签名/公证，可在各系统上追加签名流程。
+
+
+CI 自动构建（推荐）
+- 已提供 `.github/workflows/desktop-packages.yml`。
+- 在 GitHub Actions 的 Windows runner 产出 MSI，在 macOS runner 产出 DMG。
+- 构建后会自动上传安装包 artifact。
