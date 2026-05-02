@@ -74,15 +74,15 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $msi = Get-ChildItem -Recurse -Filter *.msi dist | Select-Object -First 1
-          if (-not $msi) { throw 'MSI not found under dist/' }
+          $msi = Get-ChildItem -Recurse -Filter *.msi . | Select-Object -First 1
+          if (-not $msi) { throw 'MSI not found' }
           New-Item -ItemType Directory -Force release-assets | Out-Null
           Copy-Item $msi.FullName "release-assets/WeMath2MD-$env:WEMATH2MD_VERSION-windows.msi"
 
       - name: Smoke test build output exists (macOS)
         if: runner.os == 'macOS'
         run: |
-          DMG=$(find dist -name '*.dmg' | head -n 1)
+          DMG=$(find . -name '*.dmg' | head -n 1)
           test -n "$DMG"
           mkdir -p release-assets
           cp "$DMG" "release-assets/WeMath2MD-${WEMATH2MD_VERSION}-macos-arm64.dmg"
