@@ -67,6 +67,8 @@ jobs:
 
       - name: Build desktop package (macOS DMG)
         if: runner.os == 'macOS'
+        env:
+          MACOS_CODESIGN_IDENTITY: "-"
         run: |
           python setup_desktop.py bdist_dmg
 
@@ -84,6 +86,14 @@ jobs:
         run: |
           DMG=$(find . -name '*.dmg' | head -n 1)
           test -n "$DMG"
+          hdiutil verify "$DMG"
+          MOUNT_INFO=$(hdiutil attach -readonly -nobrowse "$DMG")
+          VOLUME=$(echo "$MOUNT_INFO" | awk '/\\/Volumes\\// {print $NF; exit}')
+          test -n "$VOLUME"
+          APP=$(find "$VOLUME" -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          hdiutil detach "$VOLUME"
           mkdir -p release-assets
           cp "$DMG" "release-assets/WeMath2MD-${WEMATH2MD_VERSION}-macos-arm64.dmg"
 

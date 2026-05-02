@@ -27,6 +27,20 @@ def _executable_base() -> str | None:
     return None
 
 
+def _bdist_mac_options() -> dict[str, object]:
+    if sys.platform != "darwin":
+        return {}
+
+    identity = os.environ.get("MACOS_CODESIGN_IDENTITY", "-").strip() or "-"
+    return {
+        "bundle_name": "WeMath2MD",
+        "codesign_identity": identity,
+        "codesign_deep": True,
+        "codesign_verify": True,
+        "codesign_timestamp": identity != "-",
+    }
+
+
 build_exe_options = {
     "packages": ["flask", "requests", "bs4", "dotenv", "tenacity", "tqdm"],
     "include_files": [("templates", "templates")],
@@ -47,6 +61,6 @@ setup(
     name="WeMath2MD",
     version=_version(),
     description="WeMath2MD Desktop Client",
-    options={"build_exe": build_exe_options},
+    options={"build_exe": build_exe_options, "bdist_mac": _bdist_mac_options()},
     executables=executables,
 )
