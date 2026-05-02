@@ -88,7 +88,7 @@ jobs:
           test -n "$DMG"
           hdiutil verify "$DMG"
           MOUNT_INFO=$(hdiutil attach -readonly -nobrowse "$DMG")
-          VOLUME=$(echo "$MOUNT_INFO" | awk '/\\/Volumes\\// {print $NF; exit}')
+          VOLUME=$(printf '%s\n' "$MOUNT_INFO" | grep '/Volumes/' | sed -n 's|.*\(/Volumes/.*\)|\1|p' | head -n 1)
           test -n "$VOLUME"
           APP=$(find "$VOLUME" -maxdepth 1 -name '*.app' -print -quit)
           test -n "$APP"
